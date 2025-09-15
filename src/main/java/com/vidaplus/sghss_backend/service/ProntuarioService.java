@@ -1,14 +1,14 @@
 package com.vidaplus.sghss_backend.service;
 
-import com.vidaplus.sghss_backend.model.Paciente;
 import com.vidaplus.sghss_backend.model.Prontuario;
 import com.vidaplus.sghss_backend.model.Usuario;
 import com.vidaplus.sghss_backend.repository.ProntuarioRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -23,7 +23,7 @@ public class ProntuarioService {
      */
     public Prontuario criarProntuario(Prontuario prontuario, Usuario usuarioLogado) {
         if (!"ADMIN".equals(usuarioLogado.getPerfil()) && !"MEDICO".equals(usuarioLogado.getPerfil())) {
-            throw new SecurityException("Usuário não autorizado para criar prontuários.");
+            throw new AccessDeniedException("Usuário não autorizado para criar prontuários.");
         }
 
         prontuarioRepository.findByPaciente(prontuario.getPaciente())
@@ -52,11 +52,11 @@ public class ProntuarioService {
      */
     public Prontuario buscarPorId(Long id, Usuario usuarioLogado) {
         Prontuario prontuario = prontuarioRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Prontuário não encontrado."));
+                .orElseThrow(() -> new EntityNotFoundException("Prontuário não encontrado."));
 
         if ("PACIENTE".equals(usuarioLogado.getPerfil())
                 && !prontuario.getPaciente().getUsuario().getId().equals(usuarioLogado.getId())) {
-            throw new SecurityException("Pacientes só podem acessar seu próprio prontuário.");
+            throw new AccessDeniedException("Pacientes só podem acessar seu próprio prontuário.");
         }
 
         return prontuario;
@@ -68,11 +68,11 @@ public class ProntuarioService {
      */
     public Prontuario atualizarProntuario(Long id, Prontuario prontuarioAtualizado, Usuario usuarioLogado) {
         if (!"ADMIN".equals(usuarioLogado.getPerfil()) && !"MEDICO".equals(usuarioLogado.getPerfil())) {
-            throw new SecurityException("Usuário não autorizado para atualizar prontuários.");
+            throw new AccessDeniedException("Usuário não autorizado para atualizar prontuários.");
         }
 
         Prontuario prontuarioExistente = prontuarioRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Prontuário não encontrado."));
+                .orElseThrow(() -> new EntityNotFoundException("Prontuário não encontrado."));
 
         prontuarioExistente.setRegistros(prontuarioAtualizado.getRegistros());
         prontuarioExistente.setPrescricoes(prontuarioAtualizado.getPrescricoes());
@@ -86,11 +86,11 @@ public class ProntuarioService {
      */
     public void deletarProntuario(Long id, Usuario usuarioLogado) {
         if (!"ADMIN".equals(usuarioLogado.getPerfil())) {
-            throw new SecurityException("Apenas administradores podem deletar prontuários.");
+            throw new AccessDeniedException("Apenas administradores podem deletar prontuários.");
         }
 
         if (!prontuarioRepository.existsById(id)) {
-            throw new IllegalArgumentException("Prontuário não encontrado.");
+            throw new EntityNotFoundException("Prontuário não encontrado.");
         }
 
         prontuarioRepository.deleteById(id);
