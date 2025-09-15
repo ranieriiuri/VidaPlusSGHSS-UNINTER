@@ -1,0 +1,56 @@
+@startuml
+' Definição das entidades com atributos
+entity Usuario {
+    *id : Long <<PK>>
+    --
+    email : String
+    senhaHash : String
+    perfil : String
+}
+
+entity Paciente {
+    *id : Long <<PK>>
+    --
+    nome : String
+    cpf : String
+    dataNascimento : Date
+    endereco : String
+    telefone : String
+}
+
+entity Medico {
+    *id : Long <<PK>>
+    --
+    nome : String
+    crm : String
+    especialidade : String
+    agenda : String
+}
+
+entity Consulta {
+    *id : Long <<PK>>
+    --
+    data : Date
+    hora : String
+    status : String
+    paciente_id : Long <<FK>>
+    medico_id : Long <<FK>>
+}
+
+entity Prontuario {
+    *id : Long <<PK>>
+    --
+    registros : String
+    prescricoes : String
+    paciente_id : Long <<FK>>
+}
+
+' Relacionamentos
+Usuario ||--|| Paciente : "representa"
+Usuario ||--|| Medico : "representa"
+
+Paciente ||--o{ Consulta : "realiza"
+Medico ||--o{ Consulta : "atende"
+Paciente ||--|| Prontuario : "possui"
+
+@enduml
