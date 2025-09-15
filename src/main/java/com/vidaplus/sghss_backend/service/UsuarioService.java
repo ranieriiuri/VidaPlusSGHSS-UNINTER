@@ -3,13 +3,25 @@ package com.vidaplus.sghss_backend.service;
 import com.vidaplus.sghss_backend.model.Usuario;
 import com.vidaplus.sghss_backend.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class UsuarioService {
+public class UsuarioService implements UserDetailsService {
 
     private final UsuarioRepository usuarioRepository;
+
+    /**
+     * Carregar usuário pelo email (username) para autenticação
+     */
+    @Override
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        return usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado com email: " + email));
+    }
 
     /**
      * Buscar usuário pelo email
@@ -20,30 +32,26 @@ public class UsuarioService {
     }
 
     /**
-     * Futuro: criar usuário
+     * Criar novo usuário
      */
     public Usuario criarUsuario(Usuario usuario) {
-        // Verifica se email já existe
         usuarioRepository.findByEmail(usuario.getEmail())
                 .ifPresent(u -> { throw new IllegalArgumentException("Email já cadastrado."); });
-
         return usuarioRepository.save(usuario);
     }
 
     /**
-     * Futuro: atualizar usuário
+     * Atualizar usuário
      */
     public Usuario atualizarUsuario(Usuario usuarioAtualizado) {
         Usuario usuarioExistente = buscarPorEmail(usuarioAtualizado.getEmail());
-
         usuarioExistente.setSenhaHash(usuarioAtualizado.getSenhaHash());
         usuarioExistente.setPerfil(usuarioAtualizado.getPerfil());
-
         return usuarioRepository.save(usuarioExistente);
     }
 
     /**
-     * Futuro: deletar usuário
+     * Deletar usuário
      */
     public void deletarUsuario(String email) {
         Usuario usuarioExistente = buscarPorEmail(email);
