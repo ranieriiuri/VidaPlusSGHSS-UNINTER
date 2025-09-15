@@ -40,4 +40,4 @@ public class Paciente {
     // Relacionamento 1:1 com Prontuario
     @OneToOne(mappedBy = "paciente", cascade = CascadeType.ALL)
     private Prontuario prontuario;
-}}
+}
