@@ -1,29 +1,39 @@
 package com.vidaplus.sghss_backend.config;
 
+import com.vidaplus.sghss_backend.security.JwtAuthenticationFilter;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
-// habilita @PreAuthorize
-@EnableMethodSecurity(prePostEnabled = true)
+@EnableMethodSecurity(prePostEnabled = true) // habilita @PreAuthorize
+@RequiredArgsConstructor
 public class SecurityConfig {
+
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf().disable() // para testes iniciais
-                .authorizeHttpRequests()
-                .requestMatchers("/auth/**").permitAll() // endpoints públicos de autenticação
-                .anyRequest().authenticated()
-                .and()
-                .httpBasic(); // autenticação básica para início rápido
+                .csrf(csrf -> csrf.disable())
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS) // sem sessão, JWT only
+                )
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/auth/**").permitAll() // login e registro públicos
+                        .anyRequest().authenticated() // resto precisa de token
+                )
+                // adiciona o filtro JWT antes do filtro padrão do Spring
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
