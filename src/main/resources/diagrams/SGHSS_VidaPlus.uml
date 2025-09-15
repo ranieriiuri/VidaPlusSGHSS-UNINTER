@@ -1,0 +1,65 @@
+@startuml
+' Definição de classes com atributos e métodos
+
+class Usuario {
+    +id: Long
+    +email: String
+    +senhaHash: String
+    +perfil: String
+    --
+    +login(email: String, senha: String)
+    +logout()
+}
+
+class Paciente {
+    +id: Long
+    +nome: String
+    +cpf: String
+    +dataNascimento: Date
+    +endereco: String
+    +telefone: String
+    --
+    +cadastrar()
+    +agendarConsulta(consulta: Consulta)
+    +acessarHistorico(): Prontuario
+}
+
+class Medico {
+    +id: Long
+    +nome: String
+    +crm: String
+    +especialidade: String
+    +agenda: String
+    --
+    +acessarAgenda()
+    +registrarConsulta(consulta: Consulta)
+    +atualizarProntuario(prontuario: Prontuario)
+}
+
+class Consulta {
+    +id: Long
+    +data: Date
+    +hora: String
+    +status: String
+    --
+    +alterarStatus(novoStatus: String)
+}
+
+class Prontuario {
+    +id: Long
+    +registros: String
+    +prescricoes: String
+    --
+    +adicionarRegistro(registro: String)
+    +adicionarPrescricao(prescricao: String)
+}
+
+' Relacionamentos principais
+Usuario "1" -- "0..1" Paciente : representa
+Usuario "1" -- "0..1" Medico : representa
+
+Paciente "1" -- "0..*" Consulta : realiza
+Medico "1" -- "0..*" Consulta : atende
+Paciente "1" -- "1" Prontuario : possui
+
+@enduml
