@@ -6,6 +6,7 @@ import com.vidaplus.sghss_backend.repository.MedicoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import org.springframework.security.access.AccessDeniedException;
 import java.util.List;
 
 @Service
@@ -20,7 +21,7 @@ public class MedicoService {
      */
     public Medico criarMedico(Medico medico, Usuario usuarioLogado) {
         if (!"ADMIN".equals(usuarioLogado.getPerfil())) {
-            throw new SecurityException("Apenas administradores podem criar médicos.");
+            throw new AccessDeniedException("Apenas administradores podem criar médicos.");
         }
 
         return medicoRepository.save(medico);
@@ -33,7 +34,7 @@ public class MedicoService {
      */
     public List<Medico> listarMedicos(Usuario usuarioLogado) {
         if ("PACIENTE".equals(usuarioLogado.getPerfil())) {
-            throw new SecurityException("Pacientes não podem listar médicos.");
+            throw new AccessDeniedException("Pacientes não podem listar médicos.");
         }
         return medicoRepository.findAll();
     }
@@ -47,11 +48,11 @@ public class MedicoService {
 
         if ("MEDICO".equals(usuarioLogado.getPerfil()) &&
                 !medico.getUsuario().getId().equals(usuarioLogado.getId())) {
-            throw new SecurityException("Médicos só podem acessar seus próprios dados.");
+            throw new AccessDeniedException("Médicos só podem acessar seus próprios dados.");
         }
 
         if ("PACIENTE".equals(usuarioLogado.getPerfil())) {
-            throw new SecurityException("Pacientes não podem acessar médicos.");
+            throw new AccessDeniedException("Pacientes não podem acessar médicos.");
         }
 
         return medico;
@@ -65,7 +66,7 @@ public class MedicoService {
 
         if ("MEDICO".equals(usuarioLogado.getPerfil()) &&
                 !medicoExistente.getUsuario().getId().equals(usuarioLogado.getId())) {
-            throw new SecurityException("Médicos só podem atualizar seus próprios dados.");
+            throw new AccessDeniedException("Médicos só podem atualizar seus próprios dados.");
         }
 
         medicoExistente.setNome(medicoAtualizado.getNome());
@@ -81,7 +82,7 @@ public class MedicoService {
      */
     public void deletarMedico(Long id, Usuario usuarioLogado) {
         if (!"ADMIN".equals(usuarioLogado.getPerfil())) {
-            throw new SecurityException("Apenas administradores podem deletar médicos.");
+            throw new AccessDeniedException("Apenas administradores podem deletar médicos.");
         }
 
         if (!medicoRepository.existsById(id)) {

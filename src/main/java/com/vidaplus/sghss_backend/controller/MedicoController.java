@@ -20,6 +20,10 @@ public class MedicoController {
     private final MedicoService medicoService;
     private final UsuarioService usuarioService;
 
+    /**
+     * Listar todos os médicos
+     * ADMIN e MEDICO podem listar
+     */
     @GetMapping
     public ResponseEntity<List<Medico>> listarMedicos(@AuthenticationPrincipal org.springframework.security.core.userdetails.User userDetails) {
         Usuario usuarioLogado = usuarioService.buscarPorEmail(userDetails.getUsername());
@@ -27,6 +31,9 @@ public class MedicoController {
         return ResponseEntity.ok(medicos);
     }
 
+    /**
+     * Buscar médico por ID
+     */
     @GetMapping("/{id}")
     public ResponseEntity<Medico> buscarMedico(@PathVariable Long id,
                                                @AuthenticationPrincipal org.springframework.security.core.userdetails.User userDetails) {
@@ -35,6 +42,10 @@ public class MedicoController {
         return ResponseEntity.ok(medico);
     }
 
+    /**
+     * Criar médico
+     * Apenas ADMIN
+     */
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Medico> criarMedico(@RequestBody Medico medico,
@@ -44,6 +55,11 @@ public class MedicoController {
         return ResponseEntity.ok(novoMedico);
     }
 
+    /**
+     * Atualizar médico
+     * ADMIN pode atualizar qualquer um
+     * MEDICO só pode atualizar ele mesmo
+     */
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','MEDICO')")
     public ResponseEntity<Medico> atualizarMedico(@PathVariable Long id,
@@ -54,6 +70,10 @@ public class MedicoController {
         return ResponseEntity.ok(medico);
     }
 
+    /**
+     * Deletar médico
+     * Apenas ADMIN
+     */
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deletarMedico(@PathVariable Long id,
