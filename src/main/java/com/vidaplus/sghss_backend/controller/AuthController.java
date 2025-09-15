@@ -1,8 +1,8 @@
 package com.vidaplus.sghss_backend.controller;
 
 import com.vidaplus.sghss_backend.model.Usuario;
-import com.vidaplus.sghss_backend.service.UsuarioService;
 import com.vidaplus.sghss_backend.security.JwtUtil;
+import com.vidaplus.sghss_backend.service.UsuarioService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -16,63 +16,44 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class AuthController {
 
-    private final AuthenticationManager authenticationManager;
     private final UsuarioService usuarioService;
-    private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
+    private final AuthenticationManager authenticationManager;
+    private final JwtUtil jwtUtil;
+
+    // Registro público - cria apenas PACIENTE
+    @PostMapping("/register")
+    public ResponseEntity<?> registro(@RequestBody RegistroRequest request) {
+        Usuario usuario = new Usuario();
+        usuario.setEmail(request.email());
+        usuario.setSenhaHash(passwordEncoder.encode(request.senha()));
+        usuario.setPerfil("PACIENTE"); // sempre PACIENTE no registro público
+
+        usuarioService.criarUsuarioPublico(usuario);
+
+        return ResponseEntity.ok("Usuário registrado com sucesso");
+    }
 
     // Login
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         try {
-            // Autentica usuário
+            // Autentica via Spring Security
             authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getSenha())
+                    new UsernamePasswordAuthenticationToken(request.email(), request.senha())
             );
 
-            // Busca usuário no banco
-            Usuario usuario = usuarioService.buscarPorEmail(request.getEmail());
-
-            // Gera token JWT
+            Usuario usuario = usuarioService.buscarPorEmail(request.email());
             String token = jwtUtil.generateToken(usuario.getEmail());
 
             return ResponseEntity.ok(new JwtResponse(token));
-        } catch (AuthenticationException ex) {
+        } catch (AuthenticationException e) {
             return ResponseEntity.status(401).body("Email ou senha inválidos");
         }
     }
 
-    // DTOs
-    @lombok.Data
-    public static class LoginRequest {
-        private String email;
-        private String senha;
-    }
-
-    @lombok.Data
-    @lombok.AllArgsConstructor
-    public static class JwtResponse {
-        private String token;
-    }
-
-    // Cadastro de usuário
-    @PostMapping("/register")
-    public ResponseEntity<?> registro(@RequestBody RegistroRequest request) {
-        Usuario usuario = new Usuario();
-        usuario.setEmail(request.getEmail());
-        usuario.setSenhaHash(passwordEncoder.encode(request.getSenha()));
-        usuario.setPerfil(request.getPerfil());
-
-        usuarioService.criarUsuario(usuario);
-
-        return ResponseEntity.ok("Usuário registrado com sucesso");
-    }
-
-    // DTO de regisatro
-    @lombok.Data
-    public static class RegistroRequest {
-        private String email;
-        private String senha;
-        private String perfil; // "PACIENTE", "MEDICO", "ADMIN"
-    }
+    // DTOs internos
+    public record RegistroRequest(String email, String senha) {}
+    public record LoginRequest(String email, String senha) {}
+    public record JwtResponse(String token) {}
 }
