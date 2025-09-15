@@ -8,7 +8,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -18,10 +17,14 @@ public class PacienteService {
     private final UsuarioRepository usuarioRepository;
 
     /**
-     * Cadastrar paciente no sistema
-     * Somente usuários autorizados devem chamar esse método (ADMIN / MEDICO)
+     * Cadastrar paciente
+     * Apenas ADMIN ou MEDICO
      */
-    public Paciente cadastrarPaciente(Paciente paciente) {
+    public Paciente cadastrarPaciente(Paciente paciente, Usuario usuarioLogado) {
+        if (!usuarioLogado.getPerfil().equals("ADMIN") && !usuarioLogado.getPerfil().equals("MEDICO")) {
+            throw new SecurityException("Usuário não autorizado para cadastrar pacientes.");
+        }
+
         // Verificar CPF duplicado
         pacienteRepository.findByCpf(paciente.getCpf())
                 .ifPresent(p -> { throw new IllegalArgumentException("CPF já cadastrado."); });
@@ -34,24 +37,44 @@ public class PacienteService {
 
     /**
      * Listar todos os pacientes
+     * ADMIN vê todos, MEDICO vê todos, PACIENTE só vê ele mesmo
      */
-    public List<Paciente> listarPacientes() {
+    public List<Paciente> listarPacientes(Usuario usuarioLogado) {
+        if (usuarioLogado.getPerfil().equals("PACIENTE")) {
+            return pacienteRepository.findByUsuario(usuarioLogado)
+                    .map(p -> List.<Paciente>of(p)) // força List<Paciente>
+                    .orElse(List.of());
+        }
+
+        // ADMIN ou MEDICO
         return pacienteRepository.findAll();
     }
 
     /**
      * Buscar paciente por ID
      */
-    public Paciente buscarPorId(Long id) {
-        return pacienteRepository.findById(id)
+    public Paciente buscarPorId(Long id, Usuario usuarioLogado) {
+        Paciente paciente = pacienteRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Paciente não encontrado."));
+
+        if (usuarioLogado.getPerfil().equals("PACIENTE") && !paciente.getUsuario().getId().equals(usuarioLogado.getId())) {
+            throw new SecurityException("Paciente só pode acessar seus próprios dados.");
+        }
+
+        return paciente;
     }
 
     /**
-     * Atualizar dados de um paciente
+     * Atualizar paciente
+     * ADMIN ou MEDICO
      */
-    public Paciente atualizarPaciente(Long id, Paciente pacienteAtualizado) {
-        Paciente pacienteExistente = buscarPorId(id);
+    public Paciente atualizarPaciente(Long id, Paciente pacienteAtualizado, Usuario usuarioLogado) {
+        if (!usuarioLogado.getPerfil().equals("ADMIN") && !usuarioLogado.getPerfil().equals("MEDICO")) {
+            throw new SecurityException("Usuário não autorizado para atualizar pacientes.");
+        }
+
+        Paciente pacienteExistente = pacienteRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Paciente não encontrado."));
 
         pacienteExistente.setNome(pacienteAtualizado.getNome());
         pacienteExistente.setCpf(pacienteAtualizado.getCpf());
@@ -64,11 +87,18 @@ public class PacienteService {
 
     /**
      * Deletar paciente
+     * Apenas ADMIN
      */
-    public void deletarPaciente(Long id) {
+    public void deletarPaciente(Long id, Usuario usuarioLogado) {
+        if (!usuarioLogado.getPerfil().equals("ADMIN")) {
+            throw new SecurityException("Apenas administradores podem deletar pacientes.");
+        }
+
         if (!pacienteRepository.existsById(id)) {
             throw new IllegalArgumentException("Paciente não encontrado.");
         }
+
         pacienteRepository.deleteById(id);
     }
+
 }
