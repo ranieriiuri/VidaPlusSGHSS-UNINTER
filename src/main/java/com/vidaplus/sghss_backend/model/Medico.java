@@ -25,7 +25,8 @@ public class Medico {
     @Column(nullable = false)
     private String especialidade;
 
-    private String agenda;
+    @OneToMany(mappedBy = "medico", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<AgendaMedicaSlot> agendaSlots;
 
     // Relacionamento 1:1 com Usuario
     @OneToOne

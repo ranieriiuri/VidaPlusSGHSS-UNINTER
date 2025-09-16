@@ -82,6 +82,17 @@ public class MedicoService {
                 .toList();
     }
 
+    public Medico buscarEntidadePorId(Long id, Usuario usuarioLogado) {
+        Medico medico = medicoRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Médico não encontrado."));
+
+        if (usuarioLogado.getPerfil() == PerfilUsuario.MEDICO &&
+                !medico.getUsuario().getId().equals(usuarioLogado.getId())) {
+            throw new AccessDeniedException("Médico só pode acessar seus próprios dados.");
+        }
+
+        return medico;
+    }
 
     /**
      * Buscar médico por ID
