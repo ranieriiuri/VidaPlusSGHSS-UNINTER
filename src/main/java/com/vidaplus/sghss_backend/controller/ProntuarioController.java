@@ -2,10 +2,12 @@ package com.vidaplus.sghss_backend.controller;
 
 import com.vidaplus.sghss_backend.dto.CriarProntuarioRequest;
 import com.vidaplus.sghss_backend.dto.ProntuarioDTO;
-import com.vidaplus.sghss_backend.model.Prontuario;
 import com.vidaplus.sghss_backend.model.Paciente;
+import com.vidaplus.sghss_backend.model.Prontuario;
 import com.vidaplus.sghss_backend.model.Usuario;
+import com.vidaplus.sghss_backend.repository.PacienteRepository;
 import com.vidaplus.sghss_backend.service.ProntuarioService;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -20,6 +22,7 @@ import java.util.List;
 public class ProntuarioController {
 
     private final ProntuarioService prontuarioService;
+    private final PacienteRepository pacienteRepository;
 
     // Listar todos os prontuários
     @GetMapping
@@ -50,20 +53,20 @@ public class ProntuarioController {
             @RequestBody CriarProntuarioRequest request,
             @AuthenticationPrincipal Usuario usuarioLogado) {
 
+        // Busca paciente do banco (entidade gerenciada)
+        Paciente paciente = pacienteRepository.findById(request.pacienteId())
+                .orElseThrow(() -> new EntityNotFoundException("Paciente não encontrado."));
+
+        // Cria prontuário e associa ao paciente
         Prontuario prontuario = new Prontuario();
         prontuario.setRegistros(request.registros());
         prontuario.setPrescricoes(request.prescricoes());
-
-        Paciente paciente = new Paciente();
-        paciente.setId(request.pacienteId());
         prontuario.setPaciente(paciente);
 
-        // Criação via service, que agora suporta múltiplos prontuários
         Prontuario novoProntuario = prontuarioService.criarProntuario(prontuario, usuarioLogado);
         return ResponseEntity.ok(ProntuarioDTO.from(novoProntuario));
     }
 
-    // Atualizar prontuário
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','MEDICO')")
     public ResponseEntity<ProntuarioDTO> atualizarProntuario(
@@ -71,13 +74,10 @@ public class ProntuarioController {
             @RequestBody CriarProntuarioRequest request,
             @AuthenticationPrincipal Usuario usuarioLogado) {
 
-        Prontuario prontuarioAtualizado = new Prontuario();
-        prontuarioAtualizado.setRegistros(request.registros());
-        prontuarioAtualizado.setPrescricoes(request.prescricoes());
-
-        Prontuario prontuario = prontuarioService.atualizarProntuario(id, prontuarioAtualizado, usuarioLogado);
-        return ResponseEntity.ok(ProntuarioDTO.from(prontuario));
+        Prontuario prontuarioAtualizado = prontuarioService.atualizarProntuario(id, request, usuarioLogado);
+        return ResponseEntity.ok(ProntuarioDTO.from(prontuarioAtualizado));
     }
+
 
     // Deletar prontuário
     @DeleteMapping("/{id}")

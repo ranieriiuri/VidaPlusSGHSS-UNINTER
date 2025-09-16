@@ -1,5 +1,6 @@
 package com.vidaplus.sghss_backend.service;
 
+import com.vidaplus.sghss_backend.dto.CriarProntuarioRequest;
 import com.vidaplus.sghss_backend.model.Paciente;
 import com.vidaplus.sghss_backend.model.Prontuario;
 import com.vidaplus.sghss_backend.model.Usuario;
@@ -11,7 +12,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -24,7 +24,7 @@ public class ProntuarioService {
     /**
      * Criar novo prontuário
      * Apenas ADMIN ou MEDICO podem criar
-     * Permite múltiplos prontuários por paciente, mas impede duplicidade de 'registros'
+     * Permite múltiplos prontuários por paciente
      */
     public Prontuario criarProntuario(Prontuario prontuario, Usuario usuarioLogado) {
         if (usuarioLogado.getPerfil() != PerfilUsuario.ADMIN &&
@@ -32,20 +32,12 @@ public class ProntuarioService {
             throw new AccessDeniedException("Usuário não autorizado para criar prontuários.");
         }
 
-        Long pacienteId = prontuario.getPaciente().getId();
-        Paciente paciente = pacienteRepository.findById(pacienteId)
+        // Buscar paciente real no banco
+        Paciente paciente = pacienteRepository.findById(prontuario.getPaciente().getId())
                 .orElseThrow(() -> new EntityNotFoundException("Paciente não encontrado."));
 
-        // Evita duplicidade de 'registros' entre múltiplos prontuários
-        boolean duplicado = paciente.getProntuarios().stream()
-                .anyMatch(p -> p.getRegistros() != null && p.getRegistros().equals(prontuario.getRegistros()));
-
-        if (duplicado) {
-            throw new IllegalArgumentException("Já existe um prontuário para este paciente com o mesmo registro.");
-        }
-
         prontuario.setPaciente(paciente);
-        paciente.getProntuarios().add(prontuario);
+        paciente.getProntuarios().add(prontuario); // adiciona à lista do paciente
 
         return prontuarioRepository.save(prontuario);
     }
@@ -59,7 +51,7 @@ public class ProntuarioService {
         if (usuarioLogado.getPerfil() == PerfilUsuario.PACIENTE) {
             Paciente paciente = pacienteRepository.findByUsuario(usuarioLogado)
                     .orElseThrow(() -> new EntityNotFoundException("Paciente não encontrado."));
-            return new ArrayList<>(paciente.getProntuarios());
+            return paciente.getProntuarios();
         }
         return prontuarioRepository.findAll();
     }
@@ -84,17 +76,19 @@ public class ProntuarioService {
      * Atualizar prontuário
      * Apenas ADMIN ou MEDICO
      */
-    public Prontuario atualizarProntuario(Long id, Prontuario prontuarioAtualizado, Usuario usuarioLogado) {
+    public Prontuario atualizarProntuario(Long id, CriarProntuarioRequest request, Usuario usuarioLogado) {
         if (usuarioLogado.getPerfil() != PerfilUsuario.ADMIN &&
                 usuarioLogado.getPerfil() != PerfilUsuario.MEDICO) {
             throw new AccessDeniedException("Usuário não autorizado para atualizar prontuários.");
         }
 
+        // Busca prontuário existente
         Prontuario prontuarioExistente = prontuarioRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Prontuário não encontrado."));
 
-        prontuarioExistente.setRegistros(prontuarioAtualizado.getRegistros());
-        prontuarioExistente.setPrescricoes(prontuarioAtualizado.getPrescricoes());
+        // Atualiza campos
+        prontuarioExistente.setRegistros(request.registros());
+        prontuarioExistente.setPrescricoes(request.prescricoes());
 
         return prontuarioRepository.save(prontuarioExistente);
     }
