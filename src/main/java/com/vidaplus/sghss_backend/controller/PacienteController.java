@@ -1,5 +1,6 @@
 package com.vidaplus.sghss_backend.controller;
 
+import com.vidaplus.sghss_backend.dto.AtualizarPacienteRequest;
 import com.vidaplus.sghss_backend.model.Paciente;
 import com.vidaplus.sghss_backend.model.Usuario;
 import com.vidaplus.sghss_backend.service.PacienteService;
@@ -54,10 +55,13 @@ public class PacienteController {
      */
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','MEDICO')")
-    public ResponseEntity<Paciente> atualizarPaciente(@PathVariable Long id,
-                                                      @RequestBody Paciente pacienteAtualizado,
-                                                      @AuthenticationPrincipal Usuario usuarioLogado) {
-        return ResponseEntity.ok(pacienteService.atualizarPaciente(id, pacienteAtualizado, usuarioLogado));
+    public ResponseEntity<Paciente> atualizarPaciente(
+            @PathVariable Long id,
+            @RequestBody AtualizarPacienteRequest request,
+            @AuthenticationPrincipal Usuario usuarioLogado) {
+
+        Paciente pacienteAtualizado = pacienteService.atualizarPaciente(id, request, usuarioLogado);
+        return ResponseEntity.ok(pacienteAtualizado);
     }
 
     /**

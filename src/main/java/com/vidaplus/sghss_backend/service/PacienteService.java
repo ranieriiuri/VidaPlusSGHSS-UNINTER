@@ -1,5 +1,6 @@
 package com.vidaplus.sghss_backend.service;
 
+import com.vidaplus.sghss_backend.dto.AtualizarPacienteRequest;
 import com.vidaplus.sghss_backend.model.Paciente;
 import com.vidaplus.sghss_backend.model.Usuario;
 import com.vidaplus.sghss_backend.model.enums.PerfilUsuario;
@@ -78,7 +79,7 @@ public class PacienteService {
      * Atualizar paciente
      * Apenas ADMIN ou MEDICO
      */
-    public Paciente atualizarPaciente(Long id, Paciente pacienteAtualizado, Usuario usuarioLogado) {
+    public Paciente atualizarPaciente(Long id, AtualizarPacienteRequest request, Usuario usuarioLogado) {
         if (usuarioLogado.getPerfil() != PerfilUsuario.ADMIN &&
                 usuarioLogado.getPerfil() != PerfilUsuario.MEDICO) {
             throw new AccessDeniedException("Usuário não autorizado para atualizar pacientes.");
@@ -87,28 +88,16 @@ public class PacienteService {
         Paciente pacienteExistente = pacienteRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Paciente não encontrado."));
 
-        // Verificar duplicidade de CPF (se alterado)
-        pacienteRepository.findByCpf(pacienteAtualizado.getCpf())
-                .filter(p -> !p.getId().equals(id))
-                .ifPresent(p -> {
-                    throw new IllegalArgumentException("CPF já cadastrado.");
-                });
+        pacienteExistente.setNome(request.nome());
+        pacienteExistente.setDataNascimento(request.dataNascimento());
+        pacienteExistente.setEndereco(request.endereco());
+        pacienteExistente.setTelefone(request.telefone());
 
-        pacienteExistente.setNome(pacienteAtualizado.getNome());
-        pacienteExistente.setCpf(pacienteAtualizado.getCpf());
-        pacienteExistente.setDataNascimento(pacienteAtualizado.getDataNascimento());
-        pacienteExistente.setEndereco(pacienteAtualizado.getEndereco());
-        pacienteExistente.setTelefone(pacienteAtualizado.getTelefone());
-
-        // Se o vínculo de usuário for alterado
-        if (pacienteAtualizado.getUsuario() != null && pacienteAtualizado.getUsuario().getId() != null) {
-            Usuario usuario = usuarioRepository.findById(pacienteAtualizado.getUsuario().getId())
-                    .orElseThrow(() -> new IllegalArgumentException("Usuário vinculado não encontrado."));
-            pacienteExistente.setUsuario(usuario);
-        }
+        // NÃO alteramos pacienteExistente.setUsuario(...)
 
         return pacienteRepository.save(pacienteExistente);
     }
+
 
     /**
      * Deletar paciente
