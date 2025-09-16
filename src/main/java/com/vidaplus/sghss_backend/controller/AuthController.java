@@ -1,6 +1,7 @@
 package com.vidaplus.sghss_backend.controller;
 
 import com.vidaplus.sghss_backend.model.Usuario;
+import com.vidaplus.sghss_backend.model.enums.PerfilUsuario;
 import com.vidaplus.sghss_backend.security.JwtUtil;
 import com.vidaplus.sghss_backend.service.UsuarioService;
 import lombok.RequiredArgsConstructor;
@@ -28,7 +29,7 @@ public class AuthController {
         Usuario usuario = new Usuario();
         usuario.setEmail(request.email());
         usuario.setSenhaHash(passwordEncoder.encode(request.senha()));
-        usuario.setPerfil("PACIENTE");
+        usuario.setPerfil(PerfilUsuario.PACIENTE);
 
         Usuario criado = usuarioService.criarUsuarioPublico(usuario);
 
@@ -56,5 +57,5 @@ public class AuthController {
     public record RegistroRequest(String email, String senha) {}
     public record LoginRequest(String email, String senha) {}
     public record JwtResponse(String token, UsuarioDTO usuario) {}
-    public record UsuarioDTO(Long id, String email, String perfil) {}
+    public record UsuarioDTO(Long id, String email, PerfilUsuario perfil) {}
 }

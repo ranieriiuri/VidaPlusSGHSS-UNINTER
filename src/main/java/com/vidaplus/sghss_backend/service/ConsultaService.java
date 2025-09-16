@@ -2,9 +2,11 @@ package com.vidaplus.sghss_backend.service;
 
 import com.vidaplus.sghss_backend.model.Consulta;
 import com.vidaplus.sghss_backend.model.Usuario;
+import com.vidaplus.sghss_backend.model.enums.PerfilUsuario;
 import com.vidaplus.sghss_backend.repository.ConsultaRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -20,8 +22,9 @@ public class ConsultaService {
      * Apenas ADMIN ou MEDICO
      */
     public Consulta criarConsulta(Consulta consulta, Usuario usuarioLogado) {
-        if (!"ADMIN".equals(usuarioLogado.getPerfil()) && !"MEDICO".equals(usuarioLogado.getPerfil())) {
-            throw new SecurityException("Usuário não autorizado para criar consultas.");
+        if (usuarioLogado.getPerfil() != PerfilUsuario.ADMIN &&
+                usuarioLogado.getPerfil() != PerfilUsuario.MEDICO) {
+            throw new AccessDeniedException("Usuário não autorizado para criar consultas.");
         }
 
         return consultaRepository.save(consulta);
@@ -33,14 +36,14 @@ public class ConsultaService {
      */
     public List<Consulta> listarConsultas(Usuario usuarioLogado) {
         switch (usuarioLogado.getPerfil()) {
-            case "ADMIN":
+            case ADMIN:
                 return consultaRepository.findAll();
-            case "MEDICO":
+            case MEDICO:
                 return consultaRepository.findByMedicoUsuario(usuarioLogado);
-            case "PACIENTE":
+            case PACIENTE:
                 return consultaRepository.findByPacienteUsuario(usuarioLogado);
             default:
-                throw new SecurityException("Perfil desconhecido.");
+                throw new AccessDeniedException("Perfil desconhecido.");
         }
     }
 
@@ -52,14 +55,14 @@ public class ConsultaService {
         Consulta consulta = consultaRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Consulta não encontrada."));
 
-        if ("MEDICO".equals(usuarioLogado.getPerfil()) &&
+        if (usuarioLogado.getPerfil() == PerfilUsuario.MEDICO &&
                 !consulta.getMedico().getUsuario().getId().equals(usuarioLogado.getId())) {
-            throw new SecurityException("Médicos só podem acessar suas próprias consultas.");
+            throw new AccessDeniedException("Médicos só podem acessar suas próprias consultas.");
         }
 
-        if ("PACIENTE".equals(usuarioLogado.getPerfil()) &&
+        if (usuarioLogado.getPerfil() == PerfilUsuario.PACIENTE &&
                 !consulta.getPaciente().getUsuario().getId().equals(usuarioLogado.getId())) {
-            throw new SecurityException("Pacientes só podem acessar suas próprias consultas.");
+            throw new AccessDeniedException("Pacientes só podem acessar suas próprias consultas.");
         }
 
         return consulta;
@@ -72,9 +75,9 @@ public class ConsultaService {
     public Consulta atualizarConsulta(Long id, Consulta consultaAtualizada, Usuario usuarioLogado) {
         Consulta consultaExistente = buscarPorId(id, usuarioLogado);
 
-        if ("MEDICO".equals(usuarioLogado.getPerfil()) &&
+        if (usuarioLogado.getPerfil() == PerfilUsuario.MEDICO &&
                 !consultaExistente.getMedico().getUsuario().getId().equals(usuarioLogado.getId())) {
-            throw new SecurityException("Médicos só podem atualizar suas próprias consultas.");
+            throw new AccessDeniedException("Médicos só podem atualizar suas próprias consultas.");
         }
 
         consultaExistente.setData(consultaAtualizada.getData());
@@ -91,8 +94,8 @@ public class ConsultaService {
      * Apenas ADMIN
      */
     public void deletarConsulta(Long id, Usuario usuarioLogado) {
-        if (!"ADMIN".equals(usuarioLogado.getPerfil())) {
-            throw new SecurityException("Apenas administradores podem deletar consultas.");
+        if (usuarioLogado.getPerfil() != PerfilUsuario.ADMIN) {
+            throw new AccessDeniedException("Apenas administradores podem deletar consultas.");
         }
 
         if (!consultaRepository.existsById(id)) {

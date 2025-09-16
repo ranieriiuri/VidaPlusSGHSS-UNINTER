@@ -2,6 +2,7 @@ package com.vidaplus.sghss_backend.service;
 
 import com.vidaplus.sghss_backend.model.Medico;
 import com.vidaplus.sghss_backend.model.Usuario;
+import com.vidaplus.sghss_backend.model.enums.PerfilUsuario;
 import com.vidaplus.sghss_backend.repository.MedicoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -20,7 +21,7 @@ public class MedicoService {
      * Apenas ADMIN
      */
     public Medico criarMedico(Medico medico, Usuario usuarioLogado) {
-        if (!"ADMIN".equals(usuarioLogado.getPerfil())) {
+        if (usuarioLogado.getPerfil() != PerfilUsuario.ADMIN) {
             throw new AccessDeniedException("Apenas administradores podem criar médicos.");
         }
 
@@ -33,7 +34,7 @@ public class MedicoService {
      * MEDICO vê todos
      */
     public List<Medico> listarMedicos(Usuario usuarioLogado) {
-        if ("PACIENTE".equals(usuarioLogado.getPerfil())) {
+        if (usuarioLogado.getPerfil() == PerfilUsuario.PACIENTE) {
             throw new AccessDeniedException("Pacientes não podem listar médicos.");
         }
         return medicoRepository.findAll();
@@ -46,12 +47,12 @@ public class MedicoService {
         Medico medico = medicoRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Médico não encontrado."));
 
-        if ("MEDICO".equals(usuarioLogado.getPerfil()) &&
+        if (usuarioLogado.getPerfil() == PerfilUsuario.MEDICO &&
                 !medico.getUsuario().getId().equals(usuarioLogado.getId())) {
             throw new AccessDeniedException("Médicos só podem acessar seus próprios dados.");
         }
 
-        if ("PACIENTE".equals(usuarioLogado.getPerfil())) {
+        if (usuarioLogado.getPerfil() == PerfilUsuario.PACIENTE) {
             throw new AccessDeniedException("Pacientes não podem acessar médicos.");
         }
 
@@ -64,7 +65,7 @@ public class MedicoService {
     public Medico atualizarMedico(Long id, Medico medicoAtualizado, Usuario usuarioLogado) {
         Medico medicoExistente = buscarPorId(id, usuarioLogado);
 
-        if ("MEDICO".equals(usuarioLogado.getPerfil()) &&
+        if (usuarioLogado.getPerfil() == PerfilUsuario.MEDICO &&
                 !medicoExistente.getUsuario().getId().equals(usuarioLogado.getId())) {
             throw new AccessDeniedException("Médicos só podem atualizar seus próprios dados.");
         }
@@ -81,7 +82,7 @@ public class MedicoService {
      * Apenas ADMIN
      */
     public void deletarMedico(Long id, Usuario usuarioLogado) {
-        if (!"ADMIN".equals(usuarioLogado.getPerfil())) {
+        if (usuarioLogado.getPerfil() != PerfilUsuario.ADMIN) {
             throw new AccessDeniedException("Apenas administradores podem deletar médicos.");
         }
 

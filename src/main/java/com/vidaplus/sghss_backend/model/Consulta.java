@@ -1,4 +1,5 @@
 package com.vidaplus.sghss_backend.model;
+import com.vidaplus.sghss_backend.model.enums.StatusConsulta;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDate;
@@ -22,8 +23,9 @@ public class Consulta {
     @Column(nullable = false)
     private LocalTime hora;
 
+    @Enumerated(EnumType.STRING) // salva AGENDADA, REALIZADA, CANCELADA como texto no banco
     @Column(nullable = false)
-    private String status; // ex: "AGENDADA", "REALIZADA", "CANCELADA"
+    private StatusConsulta status;
 
     // Relacionamento N:1 com Paciente
     @ManyToOne

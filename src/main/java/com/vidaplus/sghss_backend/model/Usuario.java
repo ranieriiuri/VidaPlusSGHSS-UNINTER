@@ -2,6 +2,7 @@ package com.vidaplus.sghss_backend.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.vidaplus.sghss_backend.model.enums.PerfilUsuario;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
@@ -29,8 +30,9 @@ public class Usuario implements UserDetails {
     @Column(nullable = false)
     private String senhaHash;
 
-    @Column(nullable = false)
-    private String perfil; // "PACIENTE", "MEDICO", "ADMIN"
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private PerfilUsuario perfil;
 
     // Relacionamentos 1:1
     @OneToOne(mappedBy = "usuario")

@@ -2,9 +2,11 @@ package com.vidaplus.sghss_backend.service;
 
 import com.vidaplus.sghss_backend.model.Paciente;
 import com.vidaplus.sghss_backend.model.Usuario;
+import com.vidaplus.sghss_backend.model.enums.PerfilUsuario;
 import com.vidaplus.sghss_backend.repository.PacienteRepository;
 import com.vidaplus.sghss_backend.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -21,8 +23,9 @@ public class PacienteService {
      * Apenas ADMIN ou MEDICO
      */
     public Paciente cadastrarPaciente(Paciente paciente, Usuario usuarioLogado) {
-        if (!usuarioLogado.getPerfil().equals("ADMIN") && !usuarioLogado.getPerfil().equals("MEDICO")) {
-            throw new SecurityException("Usuário não autorizado para cadastrar pacientes.");
+        if (usuarioLogado.getPerfil() != PerfilUsuario.ADMIN &&
+                usuarioLogado.getPerfil() != PerfilUsuario.MEDICO) {
+            throw new AccessDeniedException("Usuário não autorizado para cadastrar pacientes.");
         }
 
         // Verificar CPF duplicado
@@ -40,9 +43,9 @@ public class PacienteService {
      * ADMIN vê todos, MEDICO vê todos, PACIENTE só vê ele mesmo
      */
     public List<Paciente> listarPacientes(Usuario usuarioLogado) {
-        if (usuarioLogado.getPerfil().equals("PACIENTE")) {
+        if (usuarioLogado.getPerfil() == PerfilUsuario.PACIENTE) {
             return pacienteRepository.findByUsuario(usuarioLogado)
-                    .map(p -> List.<Paciente>of(p)) // força List<Paciente>
+                    .map(List::of)
                     .orElse(List.of());
         }
 
@@ -57,8 +60,9 @@ public class PacienteService {
         Paciente paciente = pacienteRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Paciente não encontrado."));
 
-        if (usuarioLogado.getPerfil().equals("PACIENTE") && !paciente.getUsuario().getId().equals(usuarioLogado.getId())) {
-            throw new SecurityException("Paciente só pode acessar seus próprios dados.");
+        if (usuarioLogado.getPerfil() == PerfilUsuario.PACIENTE &&
+                !paciente.getUsuario().getId().equals(usuarioLogado.getId())) {
+            throw new AccessDeniedException("Paciente só pode acessar seus próprios dados.");
         }
 
         return paciente;
@@ -69,8 +73,9 @@ public class PacienteService {
      * ADMIN ou MEDICO
      */
     public Paciente atualizarPaciente(Long id, Paciente pacienteAtualizado, Usuario usuarioLogado) {
-        if (!usuarioLogado.getPerfil().equals("ADMIN") && !usuarioLogado.getPerfil().equals("MEDICO")) {
-            throw new SecurityException("Usuário não autorizado para atualizar pacientes.");
+        if (usuarioLogado.getPerfil() != PerfilUsuario.ADMIN &&
+                usuarioLogado.getPerfil() != PerfilUsuario.MEDICO) {
+            throw new AccessDeniedException("Usuário não autorizado para atualizar pacientes.");
         }
 
         Paciente pacienteExistente = pacienteRepository.findById(id)
@@ -90,8 +95,8 @@ public class PacienteService {
      * Apenas ADMIN
      */
     public void deletarPaciente(Long id, Usuario usuarioLogado) {
-        if (!usuarioLogado.getPerfil().equals("ADMIN")) {
-            throw new SecurityException("Apenas administradores podem deletar pacientes.");
+        if (usuarioLogado.getPerfil() != PerfilUsuario.ADMIN) {
+            throw new AccessDeniedException("Apenas administradores podem deletar pacientes.");
         }
 
         if (!pacienteRepository.existsById(id)) {
@@ -100,5 +105,4 @@ public class PacienteService {
 
         pacienteRepository.deleteById(id);
     }
-
 }
