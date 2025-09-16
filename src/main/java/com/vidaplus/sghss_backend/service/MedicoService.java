@@ -2,7 +2,6 @@ package com.vidaplus.sghss_backend.service;
 
 import com.vidaplus.sghss_backend.dto.MedicoDTO;
 import com.vidaplus.sghss_backend.model.Medico;
-import com.vidaplus.sghss_backend.model.Paciente;
 import com.vidaplus.sghss_backend.model.Usuario;
 import com.vidaplus.sghss_backend.model.enums.PerfilUsuario;
 import com.vidaplus.sghss_backend.repository.MedicoRepository;
@@ -21,6 +20,7 @@ public class MedicoService {
 
     private final MedicoRepository medicoRepository;
     private final UsuarioRepository usuarioRepository;
+    private final AuditLogService auditLogService; // ← audit logs
 
     /**
      * Criar médico
@@ -35,36 +35,40 @@ public class MedicoService {
             throw new IllegalArgumentException("O médico deve ter um usuário existente (id obrigatório).");
         }
 
-        // Buscar o usuário gerenciado pelo JPA
         Usuario usuario = usuarioRepository.findById(medico.getUsuario().getId())
                 .orElseThrow(() -> new IllegalArgumentException("Usuário associado não encontrado."));
 
-        // Verificar perfil do usuário
         if (usuario.getPerfil() == PerfilUsuario.PACIENTE) {
             throw new IllegalArgumentException("Não é possível associar um paciente como médico.");
         }
 
-        // Verificar se já existe outro médico vinculado a esse usuário
         if (medicoRepository.existsByUsuario(usuario)) {
             throw new IllegalArgumentException("Usuário já está associado a outro médico.");
         }
 
-        // Criar uma nova instância para salvar
         Medico medicoParaSalvar = Medico.builder()
                 .nome(medico.getNome())
                 .crm(medico.getCrm())
                 .especialidade(medico.getEspecialidade())
-                .usuario(usuario) // somente o usuário gerenciado
+                .usuario(usuario)
                 .build();
 
-        return medicoRepository.save(medicoParaSalvar);
+        Medico salvo = medicoRepository.save(medicoParaSalvar);
+
+        // Registrar log
+        auditLogService.registrarAcao(
+                usuarioLogado.getId(),
+                usuarioLogado.getEmail(),
+                usuarioLogado.getPerfil().name(),
+                "CRIAR_MEDICO",
+                "Medico",
+                salvo.getId(),
+                "Nome: " + salvo.getNome() + ", CRM: " + salvo.getCrm()
+        );
+
+        return salvo;
     }
 
-
-    /**
-     * Listar médicos
-     * ADMIN e MEDICO podem listar
-     */
     public List<MedicoDTO> listarMedicos(Usuario usuarioLogado) {
         if (usuarioLogado.getPerfil() == PerfilUsuario.PACIENTE) {
             throw new AccessDeniedException("Pacientes não podem listar médicos.");
@@ -105,9 +109,6 @@ public class MedicoService {
         return medico;
     }
 
-    /**
-     * Buscar médico por ID
-     */
     public MedicoDTO buscarPorId(Long id, Usuario usuarioLogado) {
         Medico medico = medicoRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Médico não encontrado."));
@@ -130,10 +131,6 @@ public class MedicoService {
                 .build();
     }
 
-
-    /**
-     * Atualizar médico
-     */
     public Medico atualizarMedico(Long id, Medico medicoAtualizado, Usuario usuarioLogado) {
         Medico medicoExistente = medicoRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Médico não encontrado."));
@@ -151,14 +148,22 @@ public class MedicoService {
         medicoExistente.setCrm(medicoAtualizado.getCrm());
         medicoExistente.setEspecialidade(medicoAtualizado.getEspecialidade());
 
-        // NÃO permite alterar o usuário associado
-        return medicoRepository.save(medicoExistente);
+        Medico salvo = medicoRepository.save(medicoExistente);
+
+        // Registrar log
+        auditLogService.registrarAcao(
+                usuarioLogado.getId(),
+                usuarioLogado.getEmail(),
+                usuarioLogado.getPerfil().name(),
+                "ATUALIZAR_MEDICO",
+                "Medico",
+                salvo.getId(),
+                "Nome: " + salvo.getNome() + ", CRM: " + salvo.getCrm()
+        );
+
+        return salvo;
     }
 
-    /**
-     * Deletar médico
-     * Apenas ADMIN
-     */
     @Transactional
     public void deletarMedico(Long id, Usuario usuarioLogado) {
         if (usuarioLogado.getPerfil() != PerfilUsuario.ADMIN) {
@@ -168,19 +173,27 @@ public class MedicoService {
         Medico medico = medicoRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Médico não encontrado."));
 
-        // Quebrar vínculo dos dois lados
         Usuario usuario = medico.getUsuario();
         if (usuario != null) {
             usuario.setMedico(null);
             medico.setUsuario(null);
         }
 
-        // Se houver consultas associadas, limpamos para não sobrar órfãos
         if (medico.getConsultas() != null) {
             medico.getConsultas().clear();
         }
 
         medicoRepository.delete(medico);
-    }
 
+        // Registrar log
+        auditLogService.registrarAcao(
+                usuarioLogado.getId(),
+                usuarioLogado.getEmail(),
+                usuarioLogado.getPerfil().name(),
+                "DELETAR_MEDICO",
+                "Medico",
+                medico.getId(),
+                "Nome: " + medico.getNome() + ", CRM: " + medico.getCrm()
+        );
+    }
 }

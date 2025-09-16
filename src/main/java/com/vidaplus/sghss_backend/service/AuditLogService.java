@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -26,5 +27,17 @@ public class AuditLogService {
                 .dataHora(LocalDateTime.now())
                 .build();
         auditLogRepository.save(log);
+    }
+
+    public List<AuditLog> listarTodosLogs() {
+        return auditLogRepository.findAll();
+    }
+
+    public List<AuditLog> listarLogsPorUsuario(Long usuarioId) {
+        return auditLogRepository.findByUsuarioId(usuarioId);
+    }
+
+    public List<AuditLog> listarLogsPorPeriodo(LocalDateTime inicio, LocalDateTime fim) {
+        return auditLogRepository.findByDataHoraBetween(inicio, fim);
     }
 }

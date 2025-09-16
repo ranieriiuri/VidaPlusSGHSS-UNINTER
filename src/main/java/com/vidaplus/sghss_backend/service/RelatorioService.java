@@ -31,6 +31,7 @@ public class RelatorioService {
     private final AgendaMedicaSlotService agendaSlotService;
     private final RelatorioRepository relatorioRepository;
     private final ObjectMapper objectMapper;
+    private final AuditLogService auditLogService; // ← Adicionado
 
     /**
      * Gera um relatório completo do sistema e salva no banco
@@ -68,7 +69,24 @@ public class RelatorioService {
                 .geradoPor(usuarioLogado)
                 .build();
 
-        return relatorioRepository.save(relatorio);
+        Relatorio salvo = relatorioRepository.save(relatorio);
+
+        // Registrar log de auditoria
+        auditLogService.registrarAcao(
+                usuarioLogado.getId(),
+                usuarioLogado.getEmail(),
+                usuarioLogado.getPerfil().name(),
+                "GERAR_RELATORIO_COMPLETO",
+                "Relatorio",
+                salvo.getId(),
+                "Relatório gerado com " + pacientes.size() + " pacientes, " +
+                        medicos.size() + " médicos, " +
+                        consultas.size() + " consultas, " +
+                        prontuarios.size() + " prontuários, " +
+                        slots.size() + " slots de agenda."
+        );
+
+        return salvo;
     }
 
     /**

@@ -20,11 +20,11 @@ public class ProntuarioService {
 
     private final ProntuarioRepository prontuarioRepository;
     private final PacienteRepository pacienteRepository;
+    private final AuditLogService auditLogService; // ← audit logs
 
     /**
      * Criar novo prontuário
      * Apenas ADMIN ou MEDICO podem criar
-     * Permite múltiplos prontuários por paciente
      */
     public Prontuario criarProntuario(Prontuario prontuario, Usuario usuarioLogado) {
         if (usuarioLogado.getPerfil() != PerfilUsuario.ADMIN &&
@@ -32,21 +32,28 @@ public class ProntuarioService {
             throw new AccessDeniedException("Usuário não autorizado para criar prontuários.");
         }
 
-        // Buscar paciente real no banco
         Paciente paciente = pacienteRepository.findById(prontuario.getPaciente().getId())
                 .orElseThrow(() -> new EntityNotFoundException("Paciente não encontrado."));
 
         prontuario.setPaciente(paciente);
-        paciente.getProntuarios().add(prontuario); // adiciona à lista do paciente
+        paciente.getProntuarios().add(prontuario);
 
-        return prontuarioRepository.save(prontuario);
+        Prontuario salvo = prontuarioRepository.save(prontuario);
+
+        // Registrar log
+        auditLogService.registrarAcao(
+                usuarioLogado.getId(),
+                usuarioLogado.getEmail(),
+                usuarioLogado.getPerfil().name(),
+                "CRIAR_PRONTUARIO",
+                "Prontuario",
+                salvo.getId(),
+                "Paciente: " + paciente.getNome()
+        );
+
+        return salvo;
     }
 
-    /**
-     * Listar todos os prontuários
-     * ADMIN e MEDICO veem todos
-     * PACIENTE vê apenas seus próprios prontuários
-     */
     public List<Prontuario> listarProntuarios(Usuario usuarioLogado) {
         if (usuarioLogado.getPerfil() == PerfilUsuario.PACIENTE) {
             Paciente paciente = pacienteRepository.findByUsuario(usuarioLogado)
@@ -59,10 +66,7 @@ public class ProntuarioService {
     public List<Prontuario> listarTodosProntuarios() {
         return prontuarioRepository.findAll();
     }
-    /**
-     * Buscar prontuário por ID
-     * PACIENTE só pode acessar seu próprio
-     */
+
     public Prontuario buscarPorId(Long id, Usuario usuarioLogado) {
         Prontuario prontuario = prontuarioRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Prontuário não encontrado."));
@@ -75,31 +79,34 @@ public class ProntuarioService {
         return prontuario;
     }
 
-    /**
-     * Atualizar prontuário
-     * Apenas ADMIN ou MEDICO
-     */
     public Prontuario atualizarProntuario(Long id, CriarProntuarioRequest request, Usuario usuarioLogado) {
         if (usuarioLogado.getPerfil() != PerfilUsuario.ADMIN &&
                 usuarioLogado.getPerfil() != PerfilUsuario.MEDICO) {
             throw new AccessDeniedException("Usuário não autorizado para atualizar prontuários.");
         }
 
-        // Busca prontuário existente
         Prontuario prontuarioExistente = prontuarioRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Prontuário não encontrado."));
 
-        // Atualiza campos
         prontuarioExistente.setRegistros(request.registros());
         prontuarioExistente.setPrescricoes(request.prescricoes());
 
-        return prontuarioRepository.save(prontuarioExistente);
+        Prontuario salvo = prontuarioRepository.save(prontuarioExistente);
+
+        // Registrar log
+        auditLogService.registrarAcao(
+                usuarioLogado.getId(),
+                usuarioLogado.getEmail(),
+                usuarioLogado.getPerfil().name(),
+                "ATUALIZAR_PRONTUARIO",
+                "Prontuario",
+                salvo.getId(),
+                "Paciente: " + salvo.getPaciente().getNome()
+        );
+
+        return salvo;
     }
 
-    /**
-     * Deletar prontuário
-     * Apenas ADMIN
-     */
     public void deletarProntuario(Long id, Usuario usuarioLogado) {
         if (usuarioLogado.getPerfil() != PerfilUsuario.ADMIN) {
             throw new AccessDeniedException("Apenas administradores podem deletar prontuários.");
@@ -108,9 +115,18 @@ public class ProntuarioService {
         Prontuario prontuario = prontuarioRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Prontuário não encontrado."));
 
-        // Remove da lista do paciente antes de deletar
         prontuario.getPaciente().getProntuarios().remove(prontuario);
-
         prontuarioRepository.delete(prontuario);
+
+        // Registrar log
+        auditLogService.registrarAcao(
+                usuarioLogado.getId(),
+                usuarioLogado.getEmail(),
+                usuarioLogado.getPerfil().name(),
+                "DELETAR_PRONTUARIO",
+                "Prontuario",
+                prontuario.getId(),
+                "Paciente: " + prontuario.getPaciente().getNome()
+        );
     }
 }

@@ -77,7 +77,7 @@ public class AgendaMedicaSlotController {
             throw new AccessDeniedException("Médico só pode criar slots para si mesmo.");
         }
 
-        return agendaSlotService.criarSlot(medico, data, hora);
+        return agendaSlotService.criarSlot(medico, data, hora, usuarioLogado);
     }
 
     /**
@@ -97,7 +97,7 @@ public class AgendaMedicaSlotController {
             throw new AccessDeniedException("Médico só pode alterar seus próprios slots.");
         }
 
-        return agendaSlotService.setDisponivel(slotId, disponivel);
+        return agendaSlotService.setDisponivel(slotId, disponivel, usuarioLogado);
     }
 
     /**
@@ -122,6 +122,6 @@ public class AgendaMedicaSlotController {
             throw new AccessDeniedException("Médico só pode agendar em seus próprios slots.");
         }
 
-        return agendaSlotService.vincularConsulta(slotId, consulta);
+        return agendaSlotService.vincularConsulta(slotId, consulta, usuarioLogado);
     }
 }

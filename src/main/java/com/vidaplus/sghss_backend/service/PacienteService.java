@@ -19,7 +19,8 @@ public class PacienteService {
 
     private final PacienteRepository pacienteRepository;
     private final UsuarioRepository usuarioRepository;
-    private final NotificacaoService notificacaoService; // ← Injetado
+    private final NotificacaoService notificacaoService;
+    private final AuditLogService auditLogService; // ← audit logs
 
     /**
      * Cadastrar paciente
@@ -31,13 +32,9 @@ public class PacienteService {
             throw new AccessDeniedException("Usuário não autorizado para cadastrar pacientes.");
         }
 
-        // Verificar CPF duplicado
         pacienteRepository.findByCpf(paciente.getCpf())
-                .ifPresent(p -> {
-                    throw new IllegalArgumentException("CPF já cadastrado.");
-                });
+                .ifPresent(p -> { throw new IllegalArgumentException("CPF já cadastrado."); });
 
-        // Vincular usuário ao paciente, se informado
         if (paciente.getUsuario() != null && paciente.getUsuario().getId() != null) {
             Usuario usuario = usuarioRepository.findById(paciente.getUsuario().getId())
                     .orElseThrow(() -> new IllegalArgumentException("Usuário vinculado não encontrado."));
@@ -46,38 +43,40 @@ public class PacienteService {
 
         Paciente pacienteSalvo = pacienteRepository.save(paciente);
 
-        // Opcional: enviar notificação de cadastro
         notificacaoService.enviarNotificacao(
                 pacienteSalvo,
                 "Paciente cadastrado com sucesso!",
-                "OUTROS"
+                "OUTROS",
+                usuarioLogado
+        );
+
+        // Registrar ação no log
+        auditLogService.registrarAcao(
+                usuarioLogado.getId(),
+                usuarioLogado.getEmail(),
+                usuarioLogado.getPerfil().name(),
+                "CADASTRAR_PACIENTE",
+                "Paciente",
+                pacienteSalvo.getId(),
+                "CPF: " + pacienteSalvo.getCpf()
         );
 
         return pacienteSalvo;
     }
 
-    /**
-     * Listar todos os pacientes
-     * ADMIN vê todos, MEDICO vê todos, PACIENTE só vê ele mesmo
-     */
     public List<Paciente> listarPacientes(Usuario usuarioLogado) {
         if (usuarioLogado.getPerfil() == PerfilUsuario.PACIENTE) {
             return pacienteRepository.findByUsuario(usuarioLogado)
                     .map(List::of)
                     .orElse(List.of());
         }
-
         return pacienteRepository.findAll();
     }
 
-    // Metodo interno
     public List<Paciente> listarTodosPacientes() {
         return pacienteRepository.findAll();
     }
 
-    /**
-     * Buscar paciente por ID
-     */
     public Paciente buscarPorId(Long id, Usuario usuarioLogado) {
         Paciente paciente = pacienteRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Paciente não encontrado."));
@@ -90,10 +89,6 @@ public class PacienteService {
         return paciente;
     }
 
-    /**
-     * Atualizar paciente
-     * Apenas ADMIN ou MEDICO
-     */
     public Paciente atualizarPaciente(Long id, AtualizarPacienteRequest request, Usuario usuarioLogado) {
         if (usuarioLogado.getPerfil() != PerfilUsuario.ADMIN &&
                 usuarioLogado.getPerfil() != PerfilUsuario.MEDICO) {
@@ -111,20 +106,26 @@ public class PacienteService {
 
         Paciente pacienteAtualizado = pacienteRepository.save(pacienteExistente);
 
-        // Opcional: enviar notificação de atualização
         notificacaoService.enviarNotificacao(
                 pacienteAtualizado,
                 "Seus dados foram atualizados.",
-                "OUTROS"
+                "OUTROS",
+                usuarioLogado
+        );
+
+        auditLogService.registrarAcao(
+                usuarioLogado.getId(),
+                usuarioLogado.getEmail(),
+                usuarioLogado.getPerfil().name(),
+                "ATUALIZAR_PACIENTE",
+                "Paciente",
+                pacienteAtualizado.getId(),
+                "Nome: " + pacienteAtualizado.getNome() + ", Telefone: " + pacienteAtualizado.getTelefone()
         );
 
         return pacienteAtualizado;
     }
 
-    /**
-     * Deletar paciente
-     * Apenas ADMIN
-     */
     public void deletarPaciente(Long id, Usuario usuarioLogado) {
         if (usuarioLogado.getPerfil() != PerfilUsuario.ADMIN) {
             throw new AccessDeniedException("Apenas administradores podem deletar pacientes.");
@@ -135,12 +136,18 @@ public class PacienteService {
         }
 
         pacienteRepository.deleteById(id);
+
+        auditLogService.registrarAcao(
+                usuarioLogado.getId(),
+                usuarioLogado.getEmail(),
+                usuarioLogado.getPerfil().name(),
+                "DELETAR_PACIENTE",
+                "Paciente",
+                id,
+                null
+        );
     }
 
-    /**
-     * Listar notificações de um paciente
-     * PACIENTE só vê as próprias, ADMIN/MEDICO podem ver qualquer
-     */
     public List<Notificacao> listarNotificacoes(Long pacienteId, Usuario usuarioLogado) {
         Paciente paciente = buscarPorId(pacienteId, usuarioLogado);
 
@@ -152,9 +159,6 @@ public class PacienteService {
         return notificacaoService.listarNotificacoesPaciente(paciente);
     }
 
-    /**
-     * Marcar notificação como lida
-     */
     public void marcarNotificacaoComoLida(Long notificacaoId, Usuario usuarioLogado) {
         Notificacao notificacao = notificacaoService.buscarPorId(notificacaoId);
 
@@ -163,6 +167,16 @@ public class PacienteService {
             throw new AccessDeniedException("Paciente só pode marcar suas próprias notificações.");
         }
 
-        notificacaoService.marcarComoLida(notificacaoId);
+        notificacaoService.marcarComoLida(notificacaoId, usuarioLogado);
+
+        auditLogService.registrarAcao(
+                usuarioLogado.getId(),
+                usuarioLogado.getEmail(),
+                usuarioLogado.getPerfil().name(),
+                "MARCAR_NOTIFICACAO_LIDA",
+                "Notificacao",
+                notificacaoId,
+                null
+        );
     }
 }

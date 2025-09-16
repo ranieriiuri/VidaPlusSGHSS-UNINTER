@@ -22,6 +22,7 @@ public class ConsultaService {
     private final ConsultaRepository consultaRepository;
     private final PacienteRepository pacienteRepository;
     private final MedicoRepository medicoRepository;
+    private final AuditLogService auditLogService; // ← audit logs
 
     /**
      * Criar nova consulta
@@ -33,22 +34,32 @@ public class ConsultaService {
             throw new AccessDeniedException("Usuário não autorizado para criar consultas.");
         }
 
-        // Garantir que paciente exista
         Paciente paciente = pacienteRepository.findById(consulta.getPaciente().getId())
                 .orElseThrow(() -> new EntityNotFoundException("Paciente não encontrado."));
         consulta.setPaciente(paciente);
 
-        // Garantir que médico exista
         Medico medico = medicoRepository.findById(consulta.getMedico().getId())
                 .orElseThrow(() -> new EntityNotFoundException("Médico não encontrado."));
         consulta.setMedico(medico);
 
-        return consultaRepository.save(consulta);
+        Consulta salvo = consultaRepository.save(consulta);
+
+        // Registrar log
+        auditLogService.registrarAcao(
+                usuarioLogado.getId(),
+                usuarioLogado.getEmail(),
+                usuarioLogado.getPerfil().name(),
+                "CRIAR_CONSULTA",
+                "Consulta",
+                salvo.getId(),
+                "Paciente: " + paciente.getNome() + ", Médico: " + medico.getNome()
+        );
+
+        return salvo;
     }
 
     /**
      * Listar consultas
-     * ADMIN vê todas, MEDICO só as suas, PACIENTE só as suas
      */
     public List<Consulta> listarConsultas(Usuario usuarioLogado) {
         return switch (usuarioLogado.getPerfil()) {
@@ -62,9 +73,9 @@ public class ConsultaService {
     public List<Consulta> listarTodasConsultas() {
         return consultaRepository.findAll();
     }
+
     /**
      * Buscar consulta por ID
-     * ADMIN pode acessar qualquer, MEDICO só as suas, PACIENTE só as suas
      */
     public Consulta buscarPorId(Long id, Usuario usuarioLogado) {
         Consulta consulta = consultaRepository.findById(id)
@@ -91,7 +102,6 @@ public class ConsultaService {
     /**
      * Atualizar consulta
      * Apenas ADMIN pode alterar
-     * Paciente e Médico não podem ser alterados
      */
     public Consulta atualizarConsulta(Long id, Consulta consultaAtualizada, Usuario usuarioLogado) {
         if (usuarioLogado.getPerfil() != PerfilUsuario.ADMIN) {
@@ -101,12 +111,24 @@ public class ConsultaService {
         Consulta consultaExistente = consultaRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Consulta não encontrada."));
 
-        // Apenas campos alteráveis: data, hora e status
         consultaExistente.setData(consultaAtualizada.getData());
         consultaExistente.setHora(consultaAtualizada.getHora());
         consultaExistente.setStatus(consultaAtualizada.getStatus());
 
-        return consultaRepository.save(consultaExistente);
+        Consulta salvo = consultaRepository.save(consultaExistente);
+
+        // Registrar log
+        auditLogService.registrarAcao(
+                usuarioLogado.getId(),
+                usuarioLogado.getEmail(),
+                usuarioLogado.getPerfil().name(),
+                "ATUALIZAR_CONSULTA",
+                "Consulta",
+                salvo.getId(),
+                "Paciente: " + salvo.getPaciente().getNome() + ", Médico: " + salvo.getMedico().getNome()
+        );
+
+        return salvo;
     }
 
     /**
@@ -122,5 +144,16 @@ public class ConsultaService {
                 .orElseThrow(() -> new EntityNotFoundException("Consulta não encontrada."));
 
         consultaRepository.delete(consulta);
+
+        // Registrar log
+        auditLogService.registrarAcao(
+                usuarioLogado.getId(),
+                usuarioLogado.getEmail(),
+                usuarioLogado.getPerfil().name(),
+                "DELETAR_CONSULTA",
+                "Consulta",
+                consulta.getId(),
+                "Paciente: " + consulta.getPaciente().getNome() + ", Médico: " + consulta.getMedico().getNome()
+        );
     }
 }

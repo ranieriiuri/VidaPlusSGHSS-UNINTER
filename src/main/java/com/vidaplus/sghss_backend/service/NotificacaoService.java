@@ -2,6 +2,7 @@ package com.vidaplus.sghss_backend.service;
 
 import com.vidaplus.sghss_backend.model.Notificacao;
 import com.vidaplus.sghss_backend.model.Paciente;
+import com.vidaplus.sghss_backend.model.Usuario;
 import com.vidaplus.sghss_backend.model.enums.TipoNotificacao;
 import com.vidaplus.sghss_backend.repository.NotificacaoRepository;
 import lombok.RequiredArgsConstructor;
@@ -15,11 +16,12 @@ import java.util.List;
 public class NotificacaoService {
 
     private final NotificacaoRepository notificacaoRepository;
+    private final AuditLogService auditLogService; // ← audit logs
 
     /**
      * Enviar uma nova notificação para o paciente
      */
-    public Notificacao enviarNotificacao(Paciente paciente, String mensagem, String tipo) {
+    public Notificacao enviarNotificacao(Paciente paciente, String mensagem, String tipo, Usuario usuarioLogado) {
         Notificacao notificacao = Notificacao.builder()
                 .paciente(paciente)
                 .mensagem(mensagem)
@@ -28,7 +30,22 @@ public class NotificacaoService {
                 .lida(false)
                 .build();
 
-        return notificacaoRepository.save(notificacao);
+        Notificacao salvo = notificacaoRepository.save(notificacao);
+
+        // Registrar log de auditoria
+        if (usuarioLogado != null) {
+            auditLogService.registrarAcao(
+                    usuarioLogado.getId(),
+                    usuarioLogado.getEmail(),
+                    usuarioLogado.getPerfil().name(),
+                    "ENVIAR_NOTIFICACAO",
+                    "Notificacao",
+                    salvo.getId(),
+                    "Mensagem enviada: " + mensagem
+            );
+        }
+
+        return salvo;
     }
 
     /**
@@ -48,11 +65,24 @@ public class NotificacaoService {
     /**
      * Marcar notificação como lida
      */
-    public void marcarComoLida(Long notificacaoId) {
+    public void marcarComoLida(Long notificacaoId, Usuario usuarioLogado) {
         Notificacao notificacao = notificacaoRepository.findById(notificacaoId)
                 .orElseThrow(() -> new IllegalArgumentException("Notificação não encontrada."));
         notificacao.setLida(true);
         notificacaoRepository.save(notificacao);
+
+        // Registrar log de auditoria
+        if (usuarioLogado != null) {
+            auditLogService.registrarAcao(
+                    usuarioLogado.getId(),
+                    usuarioLogado.getEmail(),
+                    usuarioLogado.getPerfil().name(),
+                    "MARCAR_NOTIFICACAO_LIDA",
+                    "Notificacao",
+                    notificacaoId,
+                    null
+            );
+        }
     }
 
     /**

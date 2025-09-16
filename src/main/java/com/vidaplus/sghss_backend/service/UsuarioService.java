@@ -16,6 +16,7 @@ import java.util.List;
 public class UsuarioService implements UserDetailsService {
 
     private final UsuarioRepository usuarioRepository;
+    private final AuditLogService auditLogService; // ← audit logs
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
@@ -36,7 +37,7 @@ public class UsuarioService implements UserDetailsService {
         usuarioRepository.findByEmail(usuario.getEmail())
                 .ifPresent(u -> { throw new IllegalArgumentException("Email já cadastrado."); });
 
-        // Regras usando PerfilUsuario
+        // Regras de perfil
         if (PerfilUsuario.MEDICO.equals(usuarioLogado.getPerfil()) && !PerfilUsuario.PACIENTE.equals(usuario.getPerfil())) {
             throw new SecurityException("Médicos só podem criar usuários com perfil PACIENTE.");
         }
@@ -44,7 +45,20 @@ public class UsuarioService implements UserDetailsService {
             throw new SecurityException("Pacientes não podem criar usuários.");
         }
 
-        return usuarioRepository.save(usuario);
+        Usuario usuarioSalvo = usuarioRepository.save(usuario);
+
+        // Registrar log
+        auditLogService.registrarAcao(
+                usuarioLogado.getId(),
+                usuarioLogado.getEmail(),
+                usuarioLogado.getPerfil().name(),
+                "CRIAR_USUARIO",
+                "Usuario",
+                usuarioSalvo.getId(),
+                "Email: " + usuarioSalvo.getEmail() + ", Perfil: " + usuarioSalvo.getPerfil()
+        );
+
+        return usuarioSalvo;
     }
 
     public Usuario criarUsuarioPublico(Usuario usuario) {
@@ -67,11 +81,22 @@ public class UsuarioService implements UserDetailsService {
             throw new SecurityException("Pacientes só podem atualizar seus próprios dados.");
         }
 
-        // Apenas senha e perfil podem ser atualizados
         usuarioExistente.setSenhaHash(usuarioAtualizado.getSenhaHash());
         usuarioExistente.setPerfil(usuarioAtualizado.getPerfil());
 
-        return usuarioRepository.save(usuarioExistente);
+        Usuario usuarioSalvo = usuarioRepository.save(usuarioExistente);
+
+        auditLogService.registrarAcao(
+                usuarioLogado.getId(),
+                usuarioLogado.getEmail(),
+                usuarioLogado.getPerfil().name(),
+                "ATUALIZAR_USUARIO",
+                "Usuario",
+                usuarioSalvo.getId(),
+                "Email: " + usuarioSalvo.getEmail() + ", Perfil: " + usuarioSalvo.getPerfil()
+        );
+
+        return usuarioSalvo;
     }
 
     public void deletarUsuario(String email, Usuario usuarioLogado) {
@@ -81,5 +106,15 @@ public class UsuarioService implements UserDetailsService {
 
         Usuario usuarioExistente = buscarPorEmail(email);
         usuarioRepository.delete(usuarioExistente);
+
+        auditLogService.registrarAcao(
+                usuarioLogado.getId(),
+                usuarioLogado.getEmail(),
+                usuarioLogado.getPerfil().name(),
+                "DELETAR_USUARIO",
+                "Usuario",
+                usuarioExistente.getId(),
+                "Email: " + usuarioExistente.getEmail()
+        );
     }
 }
