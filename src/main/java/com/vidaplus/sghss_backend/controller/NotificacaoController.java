@@ -81,7 +81,8 @@ public class NotificacaoController {
         Notificacao notificacao = notificacaoService.enviarNotificacao(
                 paciente,
                 request.mensagem(),
-                request.tipo()
+                request.tipo(),
+                usuarioLogado
         );
 
         return ResponseEntity.ok(notificacao);

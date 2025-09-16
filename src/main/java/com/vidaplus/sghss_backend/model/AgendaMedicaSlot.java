@@ -1,5 +1,6 @@
 package com.vidaplus.sghss_backend.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.vidaplus.sghss_backend.model.Consulta;
 import com.vidaplus.sghss_backend.model.Medico;
 import jakarta.persistence.*;
@@ -30,9 +31,11 @@ public class AgendaMedicaSlot {
 
     @ManyToOne
     @JoinColumn(name = "medico_id", nullable = false)
+    @JsonBackReference
     private Medico medico;
 
     @OneToOne
     @JoinColumn(name = "consulta_id")
+    @JsonBackReference
     private Consulta consulta; // vincula o slot a uma consulta quando agendada
 }

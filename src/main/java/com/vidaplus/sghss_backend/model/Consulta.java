@@ -1,4 +1,6 @@
 package com.vidaplus.sghss_backend.model;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.vidaplus.sghss_backend.model.enums.StatusConsulta;
 import jakarta.persistence.*;
 import lombok.*;
@@ -27,13 +29,17 @@ public class Consulta {
     @Column(nullable = false)
     private StatusConsulta status;
 
-    // Relacionamento N:1 com Paciente
     @ManyToOne
     @JoinColumn(name = "paciente_id", nullable = false)
+    @JsonBackReference
     private Paciente paciente;
 
-    // Relacionamento N:1 com Medico
     @ManyToOne
     @JoinColumn(name = "medico_id", nullable = false)
+    @JsonBackReference
     private Medico medico;
+
+    @OneToOne(mappedBy = "consulta")
+    @JsonManagedReference
+    private AgendaMedicaSlot agendaSlot;
 }

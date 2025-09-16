@@ -41,6 +41,7 @@ public class Paciente {
 
     // Relacionamento 1:N com Consulta
     @OneToMany(mappedBy = "paciente")
+    @JsonManagedReference
     private List<Consulta> consultas;
 
     // Relacionamento 1:N com Prontuario

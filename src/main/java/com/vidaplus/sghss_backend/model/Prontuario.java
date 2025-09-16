@@ -26,4 +26,9 @@ public class Prontuario {
     @JoinColumn(name = "paciente_id", nullable = false)
     @JsonBackReference
     private Paciente paciente;
+
+    @ManyToOne
+    @JoinColumn(name = "medico_id", nullable = false)
+    @JsonBackReference
+    private Medico medico;
 }
