@@ -56,6 +56,9 @@ public class ProntuarioService {
         return prontuarioRepository.findAll();
     }
 
+    public List<Prontuario> listarTodosProntuarios() {
+        return prontuarioRepository.findAll();
+    }
     /**
      * Buscar prontuário por ID
      * PACIENTE só pode acessar seu próprio

@@ -59,6 +59,9 @@ public class ConsultaService {
         };
     }
 
+    public List<Consulta> listarTodasConsultas() {
+        return consultaRepository.findAll();
+    }
     /**
      * Buscar consulta por ID
      * ADMIN pode acessar qualquer, MEDICO só as suas, PACIENTE só as suas

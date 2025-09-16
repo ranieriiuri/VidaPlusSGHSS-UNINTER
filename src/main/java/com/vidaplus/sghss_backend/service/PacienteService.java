@@ -70,6 +70,11 @@ public class PacienteService {
         return pacienteRepository.findAll();
     }
 
+    // Metodo interno
+    public List<Paciente> listarTodosPacientes() {
+        return pacienteRepository.findAll();
+    }
+
     /**
      * Buscar paciente por ID
      */

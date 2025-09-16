@@ -29,6 +29,10 @@ public class AgendaMedicaSlotService {
         return agendaSlotRepository.findByMedicoAndDataAndDisponivelTrue(medico, data);
     }
 
+    public List<AgendaMedicaSlot> listarTodosSlots() {
+        return agendaSlotRepository.findAll();
+    }
+
     // Criar um novo slot
     public AgendaMedicaSlot criarSlot(Medico medico, LocalDate data, LocalTime hora) {
         if (agendaSlotRepository.existsByMedicoAndDataAndHora(medico, data, hora)) {

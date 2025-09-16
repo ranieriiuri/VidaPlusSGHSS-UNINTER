@@ -82,6 +82,17 @@ public class MedicoService {
                 .toList();
     }
 
+    public List<Medico> listarEntidadesMedicos(Usuario usuarioLogado) {
+        if (usuarioLogado.getPerfil() != PerfilUsuario.ADMIN) {
+            throw new AccessDeniedException("Usuário não autorizado.");
+        }
+        return medicoRepository.findAll();
+    }
+
+    public List<Medico> listarTodosMedicos() {
+        return medicoRepository.findAll();
+    }
+
     public Medico buscarEntidadePorId(Long id, Usuario usuarioLogado) {
         Medico medico = medicoRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Médico não encontrado."));
