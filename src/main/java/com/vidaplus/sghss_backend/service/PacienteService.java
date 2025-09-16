@@ -102,6 +102,7 @@ public class PacienteService {
         pacienteExistente.setDataNascimento(request.dataNascimento());
         pacienteExistente.setEndereco(request.endereco());
         pacienteExistente.setTelefone(request.telefone());
+        pacienteExistente.setTeleconsultaInfo(request.teleconsultaInfo());
 
         Paciente pacienteAtualizado = pacienteRepository.save(pacienteExistente);
 

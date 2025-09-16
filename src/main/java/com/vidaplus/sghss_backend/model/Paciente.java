@@ -52,4 +52,7 @@ public class Paciente {
     @OneToMany(mappedBy = "paciente", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
     private List<Notificacao> notificacoes = new ArrayList<>();
+
+    @Column(name = "teleconsulta_info")
+    private String teleconsultaInfo;
 }

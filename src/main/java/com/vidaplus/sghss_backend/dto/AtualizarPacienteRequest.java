@@ -6,5 +6,6 @@ public record AtualizarPacienteRequest(
         String nome,
         LocalDate dataNascimento,
         String endereco,
-        String telefone
+        String telefone,
+        String teleconsultaInfo
 ) {}
