@@ -29,11 +29,11 @@ public class Medico {
 
     // Relacionamento 1:1 com Usuario
     @OneToOne
-    @JoinColumn(name = "usuario_id", unique = true)
+    @JoinColumn(name = "usuario_id", unique = true, nullable = false)
     @JsonBackReference
     private Usuario usuario;
 
     // Relacionamento 1:N com Consulta
-    @OneToMany(mappedBy = "medico")
+    @OneToMany(mappedBy = "medico", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Consulta> consultas;
 }
