@@ -1,8 +1,10 @@
 package com.vidaplus.sghss_backend.model;
+
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
+
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -46,4 +48,8 @@ public class Paciente {
     @JsonManagedReference
     private List<Prontuario> prontuarios = new ArrayList<>();
 
+    // Relacionamento 1:N com Notificacao
+    @OneToMany(mappedBy = "paciente", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
+    private List<Notificacao> notificacoes = new ArrayList<>();
 }
