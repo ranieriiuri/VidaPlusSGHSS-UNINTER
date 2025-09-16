@@ -1,4 +1,5 @@
 package com.vidaplus.sghss_backend.model;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDate;
@@ -31,6 +32,7 @@ public class Paciente {
     // Relacionamento 1:1 com Usuario
     @OneToOne
     @JoinColumn(name = "usuario_id", unique = true)
+    @JsonBackReference
     private Usuario usuario;
 
     // Relacionamento 1:N com Consulta

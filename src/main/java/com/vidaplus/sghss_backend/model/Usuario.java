@@ -1,5 +1,7 @@
 package com.vidaplus.sghss_backend.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
@@ -32,9 +34,11 @@ public class Usuario implements UserDetails {
 
     // Relacionamentos 1:1
     @OneToOne(mappedBy = "usuario")
+    @JsonManagedReference
     private Paciente paciente;
 
     @OneToOne(mappedBy = "usuario")
+    @JsonManagedReference
     private Medico medico;
 
     // UserDetails
