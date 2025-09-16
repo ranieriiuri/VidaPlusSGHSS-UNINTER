@@ -3,7 +3,6 @@ package com.vidaplus.sghss_backend.controller;
 import com.vidaplus.sghss_backend.model.Prontuario;
 import com.vidaplus.sghss_backend.model.Usuario;
 import com.vidaplus.sghss_backend.service.ProntuarioService;
-import com.vidaplus.sghss_backend.service.UsuarioService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -18,15 +17,13 @@ import java.util.List;
 public class ProntuarioController {
 
     private final ProntuarioService prontuarioService;
-    private final UsuarioService usuarioService;
 
     /**
      * Listar todos os prontuários
      */
     @GetMapping
     public ResponseEntity<List<Prontuario>> listarProntuarios(
-            @AuthenticationPrincipal org.springframework.security.core.userdetails.User userDetails) {
-        Usuario usuarioLogado = usuarioService.buscarPorEmail(userDetails.getUsername());
+            @AuthenticationPrincipal Usuario usuarioLogado) {
         List<Prontuario> prontuarios = prontuarioService.listarProntuarios(usuarioLogado);
         return ResponseEntity.ok(prontuarios);
     }
@@ -37,8 +34,7 @@ public class ProntuarioController {
     @GetMapping("/{id}")
     public ResponseEntity<Prontuario> buscarProntuario(
             @PathVariable Long id,
-            @AuthenticationPrincipal org.springframework.security.core.userdetails.User userDetails) {
-        Usuario usuarioLogado = usuarioService.buscarPorEmail(userDetails.getUsername());
+            @AuthenticationPrincipal Usuario usuarioLogado) {
         Prontuario prontuario = prontuarioService.buscarPorId(id, usuarioLogado);
         return ResponseEntity.ok(prontuario);
     }
@@ -51,8 +47,7 @@ public class ProntuarioController {
     @PreAuthorize("hasAnyRole('ADMIN','MEDICO')")
     public ResponseEntity<Prontuario> criarProntuario(
             @RequestBody Prontuario prontuario,
-            @AuthenticationPrincipal org.springframework.security.core.userdetails.User userDetails) {
-        Usuario usuarioLogado = usuarioService.buscarPorEmail(userDetails.getUsername());
+            @AuthenticationPrincipal Usuario usuarioLogado) {
         Prontuario novoProntuario = prontuarioService.criarProntuario(prontuario, usuarioLogado);
         return ResponseEntity.ok(novoProntuario);
     }
@@ -66,8 +61,7 @@ public class ProntuarioController {
     public ResponseEntity<Prontuario> atualizarProntuario(
             @PathVariable Long id,
             @RequestBody Prontuario prontuarioAtualizado,
-            @AuthenticationPrincipal org.springframework.security.core.userdetails.User userDetails) {
-        Usuario usuarioLogado = usuarioService.buscarPorEmail(userDetails.getUsername());
+            @AuthenticationPrincipal Usuario usuarioLogado) {
         Prontuario prontuario = prontuarioService.atualizarProntuario(id, prontuarioAtualizado, usuarioLogado);
         return ResponseEntity.ok(prontuario);
     }
@@ -80,8 +74,7 @@ public class ProntuarioController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deletarProntuario(
             @PathVariable Long id,
-            @AuthenticationPrincipal org.springframework.security.core.userdetails.User userDetails) {
-        Usuario usuarioLogado = usuarioService.buscarPorEmail(userDetails.getUsername());
+            @AuthenticationPrincipal Usuario usuarioLogado) {
         prontuarioService.deletarProntuario(id, usuarioLogado);
         return ResponseEntity.noContent().build();
     }

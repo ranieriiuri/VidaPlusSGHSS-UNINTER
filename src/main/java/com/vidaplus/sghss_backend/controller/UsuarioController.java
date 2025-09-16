@@ -1,6 +1,7 @@
 package com.vidaplus.sghss_backend.controller;
 
 import com.vidaplus.sghss_backend.model.Usuario;
+import com.vidaplus.sghss_backend.model.enums.PerfilUsuario;
 import com.vidaplus.sghss_backend.service.UsuarioService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -22,7 +23,11 @@ public class UsuarioController {
     public ResponseEntity<UsuarioDTO> criarUsuario(@RequestBody Usuario usuario,
                                                    @AuthenticationPrincipal Usuario usuarioLogado) {
         Usuario novoUsuario = usuarioService.criarUsuario(usuario, usuarioLogado);
-        return ResponseEntity.ok(new UsuarioDTO(novoUsuario.getId(), novoUsuario.getEmail(), novoUsuario.getPerfil()));
+        return ResponseEntity.ok(new UsuarioDTO(
+                novoUsuario.getId(),
+                novoUsuario.getEmail(),
+                novoUsuario.getPerfil().name()  // Converte enum para String
+        ));
     }
 
     // Atualizar usuário
@@ -32,7 +37,11 @@ public class UsuarioController {
                                                        @AuthenticationPrincipal Usuario usuarioLogado) {
         usuarioAtualizado.setEmail(email);
         Usuario atualizado = usuarioService.atualizarUsuario(usuarioAtualizado, usuarioLogado);
-        return ResponseEntity.ok(new UsuarioDTO(atualizado.getId(), atualizado.getEmail(), atualizado.getPerfil()));
+        return ResponseEntity.ok(new UsuarioDTO(
+                atualizado.getId(),
+                atualizado.getEmail(),
+                atualizado.getPerfil().name()
+        ));
     }
 
     // Deletar usuário (ADMIN)
@@ -48,12 +57,18 @@ public class UsuarioController {
     @GetMapping("/{email}")
     public ResponseEntity<UsuarioDTO> buscarUsuario(@PathVariable String email,
                                                     @AuthenticationPrincipal Usuario usuarioLogado) {
-        if ("PACIENTE".equals(usuarioLogado.getPerfil()) && !usuarioLogado.getEmail().equals(email)) {
+        // PACIENTE só pode ver ele mesmo
+        if (PerfilUsuario.PACIENTE.equals(usuarioLogado.getPerfil()) &&
+                !usuarioLogado.getEmail().equals(email)) {
             return ResponseEntity.status(403).build();
         }
 
         Usuario usuario = usuarioService.buscarPorEmail(email);
-        return ResponseEntity.ok(new UsuarioDTO(usuario.getId(), usuario.getEmail(), usuario.getPerfil()));
+        return ResponseEntity.ok(new UsuarioDTO(
+                usuario.getId(),
+                usuario.getEmail(),
+                usuario.getPerfil().name()
+        ));
     }
 
     // Listar todos usuários (ADMIN)
@@ -61,7 +76,11 @@ public class UsuarioController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<UsuarioDTO>> listarUsuarios() {
         List<UsuarioDTO> usuarios = usuarioService.listarTodosUsuarios().stream()
-                .map(u -> new UsuarioDTO(u.getId(), u.getEmail(), u.getPerfil()))
+                .map(u -> new UsuarioDTO(
+                        u.getId(),
+                        u.getEmail(),
+                        u.getPerfil().name()
+                ))
                 .toList();
         return ResponseEntity.ok(usuarios);
     }
