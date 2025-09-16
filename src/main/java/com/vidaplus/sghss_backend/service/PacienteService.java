@@ -30,10 +30,16 @@ public class PacienteService {
 
         // Verificar CPF duplicado
         pacienteRepository.findByCpf(paciente.getCpf())
-                .ifPresent(p -> { throw new IllegalArgumentException("CPF já cadastrado."); });
+                .ifPresent(p -> {
+                    throw new IllegalArgumentException("CPF já cadastrado.");
+                });
 
-        // Futuro: vincular o usuário ao paciente
-        // paciente.setUsuario(...);
+        // Vincular usuário ao paciente, se informado
+        if (paciente.getUsuario() != null && paciente.getUsuario().getId() != null) {
+            Usuario usuario = usuarioRepository.findById(paciente.getUsuario().getId())
+                    .orElseThrow(() -> new IllegalArgumentException("Usuário vinculado não encontrado."));
+            paciente.setUsuario(usuario);
+        }
 
         return pacienteRepository.save(paciente);
     }
@@ -70,7 +76,7 @@ public class PacienteService {
 
     /**
      * Atualizar paciente
-     * ADMIN ou MEDICO
+     * Apenas ADMIN ou MEDICO
      */
     public Paciente atualizarPaciente(Long id, Paciente pacienteAtualizado, Usuario usuarioLogado) {
         if (usuarioLogado.getPerfil() != PerfilUsuario.ADMIN &&
@@ -81,11 +87,25 @@ public class PacienteService {
         Paciente pacienteExistente = pacienteRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Paciente não encontrado."));
 
+        // Verificar duplicidade de CPF (se alterado)
+        pacienteRepository.findByCpf(pacienteAtualizado.getCpf())
+                .filter(p -> !p.getId().equals(id))
+                .ifPresent(p -> {
+                    throw new IllegalArgumentException("CPF já cadastrado.");
+                });
+
         pacienteExistente.setNome(pacienteAtualizado.getNome());
         pacienteExistente.setCpf(pacienteAtualizado.getCpf());
         pacienteExistente.setDataNascimento(pacienteAtualizado.getDataNascimento());
         pacienteExistente.setEndereco(pacienteAtualizado.getEndereco());
         pacienteExistente.setTelefone(pacienteAtualizado.getTelefone());
+
+        // Se o vínculo de usuário for alterado
+        if (pacienteAtualizado.getUsuario() != null && pacienteAtualizado.getUsuario().getId() != null) {
+            Usuario usuario = usuarioRepository.findById(pacienteAtualizado.getUsuario().getId())
+                    .orElseThrow(() -> new IllegalArgumentException("Usuário vinculado não encontrado."));
+            pacienteExistente.setUsuario(usuario);
+        }
 
         return pacienteRepository.save(pacienteExistente);
     }

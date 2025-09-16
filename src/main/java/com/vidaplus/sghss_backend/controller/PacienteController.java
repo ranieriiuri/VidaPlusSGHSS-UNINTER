@@ -3,11 +3,11 @@ package com.vidaplus.sghss_backend.controller;
 import com.vidaplus.sghss_backend.model.Paciente;
 import com.vidaplus.sghss_backend.model.Usuario;
 import com.vidaplus.sghss_backend.service.PacienteService;
-import com.vidaplus.sghss_backend.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.List;
 
@@ -17,45 +17,57 @@ import java.util.List;
 public class PacienteController {
 
     private final PacienteService pacienteService;
-    private final UsuarioRepository usuarioRepository;
 
-    private Usuario getUsuarioLogado() {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        return usuarioRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Usuário autenticado não encontrado."));
-    }
-
+    /**
+     * Listar pacientes
+     * ADMIN e MEDICO veem todos
+     * PACIENTE vê apenas ele mesmo
+     */
     @GetMapping
-    public ResponseEntity<List<Paciente>> listarPacientes() {
-        Usuario usuarioLogado = getUsuarioLogado();
-        List<Paciente> pacientes = pacienteService.listarPacientes(usuarioLogado);
-        return ResponseEntity.ok(pacientes);
+    public ResponseEntity<List<Paciente>> listarPacientes(@AuthenticationPrincipal Usuario usuarioLogado) {
+        return ResponseEntity.ok(pacienteService.listarPacientes(usuarioLogado));
     }
 
+    /**
+     * Buscar paciente por ID
+     */
     @GetMapping("/{id}")
-    public ResponseEntity<Paciente> buscarPaciente(@PathVariable Long id) {
-        Usuario usuarioLogado = getUsuarioLogado();
-        Paciente paciente = pacienteService.buscarPorId(id, usuarioLogado);
-        return ResponseEntity.ok(paciente);
+    public ResponseEntity<Paciente> buscarPaciente(@PathVariable Long id,
+                                                   @AuthenticationPrincipal Usuario usuarioLogado) {
+        return ResponseEntity.ok(pacienteService.buscarPorId(id, usuarioLogado));
     }
 
+    /**
+     * Cadastrar paciente
+     * Apenas ADMIN ou MEDICO
+     */
     @PostMapping
-    public ResponseEntity<Paciente> cadastrarPaciente(@RequestBody Paciente paciente) {
-        Usuario usuarioLogado = getUsuarioLogado();
-        Paciente novoPaciente = pacienteService.cadastrarPaciente(paciente, usuarioLogado);
-        return ResponseEntity.ok(novoPaciente);
+    @PreAuthorize("hasAnyRole('ADMIN','MEDICO')")
+    public ResponseEntity<Paciente> cadastrarPaciente(@RequestBody Paciente paciente,
+                                                      @AuthenticationPrincipal Usuario usuarioLogado) {
+        return ResponseEntity.ok(pacienteService.cadastrarPaciente(paciente, usuarioLogado));
     }
 
+    /**
+     * Atualizar paciente
+     * Apenas ADMIN ou MEDICO
+     */
     @PutMapping("/{id}")
-    public ResponseEntity<Paciente> atualizarPaciente(@PathVariable Long id, @RequestBody Paciente pacienteAtualizado) {
-        Usuario usuarioLogado = getUsuarioLogado();
-        Paciente paciente = pacienteService.atualizarPaciente(id, pacienteAtualizado, usuarioLogado);
-        return ResponseEntity.ok(paciente);
+    @PreAuthorize("hasAnyRole('ADMIN','MEDICO')")
+    public ResponseEntity<Paciente> atualizarPaciente(@PathVariable Long id,
+                                                      @RequestBody Paciente pacienteAtualizado,
+                                                      @AuthenticationPrincipal Usuario usuarioLogado) {
+        return ResponseEntity.ok(pacienteService.atualizarPaciente(id, pacienteAtualizado, usuarioLogado));
     }
 
+    /**
+     * Deletar paciente
+     * Apenas ADMIN
+     */
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletarPaciente(@PathVariable Long id) {
-        Usuario usuarioLogado = getUsuarioLogado();
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deletarPaciente(@PathVariable Long id,
+                                                @AuthenticationPrincipal Usuario usuarioLogado) {
         pacienteService.deletarPaciente(id, usuarioLogado);
         return ResponseEntity.noContent().build();
     }
