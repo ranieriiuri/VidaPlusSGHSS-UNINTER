@@ -1,4 +1,5 @@
 package com.vidaplus.sghss_backend.model;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -20,8 +21,9 @@ public class Prontuario {
     @Column(columnDefinition = "TEXT")
     private String prescricoes;
 
-    // Relacionamento 1:1 com Paciente
-    @OneToOne
-    @JoinColumn(name = "paciente_id", unique = true, nullable = false)
+    // Relacionamento N:1 com Paciente
+    @ManyToOne
+    @JoinColumn(name = "paciente_id", nullable = false)
+    @JsonBackReference
     private Paciente paciente;
 }

@@ -1,14 +1,17 @@
 package com.vidaplus.sghss_backend.service;
 
+import com.vidaplus.sghss_backend.model.Paciente;
 import com.vidaplus.sghss_backend.model.Prontuario;
 import com.vidaplus.sghss_backend.model.Usuario;
 import com.vidaplus.sghss_backend.model.enums.PerfilUsuario;
+import com.vidaplus.sghss_backend.repository.PacienteRepository;
 import com.vidaplus.sghss_backend.repository.ProntuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -16,11 +19,12 @@ import java.util.List;
 public class ProntuarioService {
 
     private final ProntuarioRepository prontuarioRepository;
+    private final PacienteRepository pacienteRepository;
 
     /**
      * Criar novo prontuário
      * Apenas ADMIN ou MEDICO podem criar
-     * Verifica se já existe prontuário para o paciente
+     * Permite múltiplos prontuários por paciente, mas impede duplicidade de 'registros'
      */
     public Prontuario criarProntuario(Prontuario prontuario, Usuario usuarioLogado) {
         if (usuarioLogado.getPerfil() != PerfilUsuario.ADMIN &&
@@ -28,8 +32,20 @@ public class ProntuarioService {
             throw new AccessDeniedException("Usuário não autorizado para criar prontuários.");
         }
 
-        prontuarioRepository.findByPaciente(prontuario.getPaciente())
-                .ifPresent(p -> { throw new IllegalArgumentException("Prontuário já existe para este paciente."); });
+        Long pacienteId = prontuario.getPaciente().getId();
+        Paciente paciente = pacienteRepository.findById(pacienteId)
+                .orElseThrow(() -> new EntityNotFoundException("Paciente não encontrado."));
+
+        // Evita duplicidade de 'registros' entre múltiplos prontuários
+        boolean duplicado = paciente.getProntuarios().stream()
+                .anyMatch(p -> p.getRegistros() != null && p.getRegistros().equals(prontuario.getRegistros()));
+
+        if (duplicado) {
+            throw new IllegalArgumentException("Já existe um prontuário para este paciente com o mesmo registro.");
+        }
+
+        prontuario.setPaciente(paciente);
+        paciente.getProntuarios().add(prontuario);
 
         return prontuarioRepository.save(prontuario);
     }
@@ -37,13 +53,13 @@ public class ProntuarioService {
     /**
      * Listar todos os prontuários
      * ADMIN e MEDICO veem todos
-     * PACIENTE vê apenas seu próprio prontuário
+     * PACIENTE vê apenas seus próprios prontuários
      */
     public List<Prontuario> listarProntuarios(Usuario usuarioLogado) {
         if (usuarioLogado.getPerfil() == PerfilUsuario.PACIENTE) {
-            return prontuarioRepository.findByPacienteUsuario(usuarioLogado)
-                    .map(List::of)
-                    .orElse(List.of());
+            Paciente paciente = pacienteRepository.findByUsuario(usuarioLogado)
+                    .orElseThrow(() -> new EntityNotFoundException("Paciente não encontrado."));
+            return new ArrayList<>(paciente.getProntuarios());
         }
         return prontuarioRepository.findAll();
     }
@@ -58,7 +74,7 @@ public class ProntuarioService {
 
         if (usuarioLogado.getPerfil() == PerfilUsuario.PACIENTE &&
                 !prontuario.getPaciente().getUsuario().getId().equals(usuarioLogado.getId())) {
-            throw new AccessDeniedException("Pacientes só podem acessar seu próprio prontuário.");
+            throw new AccessDeniedException("Pacientes só podem acessar seus próprios prontuários.");
         }
 
         return prontuario;
@@ -92,10 +108,12 @@ public class ProntuarioService {
             throw new AccessDeniedException("Apenas administradores podem deletar prontuários.");
         }
 
-        if (!prontuarioRepository.existsById(id)) {
-            throw new EntityNotFoundException("Prontuário não encontrado.");
-        }
+        Prontuario prontuario = prontuarioRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Prontuário não encontrado."));
 
-        prontuarioRepository.deleteById(id);
+        // Remove da lista do paciente antes de deletar
+        prontuario.getPaciente().getProntuarios().remove(prontuario);
+
+        prontuarioRepository.delete(prontuario);
     }
 }

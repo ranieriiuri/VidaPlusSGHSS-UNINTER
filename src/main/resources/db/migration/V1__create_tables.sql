@@ -31,7 +31,7 @@ CREATE TABLE prontuarios (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     registros TEXT,
     prescricoes TEXT,
-    paciente_id BIGINT UNIQUE NOT NULL,
+    paciente_id BIGINT NOT NULL,
     CONSTRAINT fk_prontuario_paciente FOREIGN KEY (paciente_id) REFERENCES pacientes(id)
 );
 

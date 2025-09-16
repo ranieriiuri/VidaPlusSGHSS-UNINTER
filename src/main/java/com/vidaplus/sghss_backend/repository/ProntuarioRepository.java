@@ -4,10 +4,12 @@ import com.vidaplus.sghss_backend.model.Prontuario;
 import com.vidaplus.sghss_backend.model.Paciente;
 import com.vidaplus.sghss_backend.model.Usuario;
 import org.springframework.data.jpa.repository.JpaRepository;
-import java.util.Optional;
+import java.util.List;
 
 public interface ProntuarioRepository extends JpaRepository<Prontuario, Long> {
-    // Buscar prontuário por paciente
-    Optional<Prontuario> findByPaciente(Paciente paciente);
-    Optional<Prontuario> findByPacienteUsuario(Usuario usuario);
+    // Buscar todos os prontuários de um paciente
+    List<Prontuario> findByPaciente(Paciente paciente);
+
+    // Buscar todos os prontuários de um paciente pelo usuário associado
+    List<Prontuario> findByPacienteUsuario(Usuario usuario);
 }
