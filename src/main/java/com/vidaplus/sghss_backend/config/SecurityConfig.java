@@ -61,8 +61,12 @@ public class SecurityConfig {
 
                 // Regras de autorização
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/**").permitAll() // login e registro públicos
-                        .anyRequest().authenticated()           // resto precisa de token
+                        .requestMatchers(
+                                "/auth/**",           // login e registro
+                                "/swagger-ui/**",     // Swagger UI
+                                "/v3/api-docs/**"     // OpenAPI docs
+                        ).permitAll()
+                        .anyRequest().authenticated()
                 )
 
                 // Filtro JWT antes do UsernamePasswordAuthenticationFilter

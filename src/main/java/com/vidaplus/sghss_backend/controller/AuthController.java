@@ -4,6 +4,8 @@ import com.vidaplus.sghss_backend.model.Usuario;
 import com.vidaplus.sghss_backend.model.enums.PerfilUsuario;
 import com.vidaplus.sghss_backend.security.JwtUtil;
 import com.vidaplus.sghss_backend.service.UsuarioService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -23,8 +25,14 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
 
-    // Registro público - PACIENTE
+    /**
+     * Registro público - cria conta como PACIENTE
+     */
     @PostMapping("/register")
+    @Operation(
+            summary = "Registro de usuário",
+            description = "Cria uma nova conta no sistema como PACIENTE. Endpoint público, não requer autenticação."
+    )
     public ResponseEntity<?> registro(@RequestBody RegistroRequest request) {
         Usuario usuario = new Usuario();
         usuario.setEmail(request.email());
@@ -36,8 +44,14 @@ public class AuthController {
         return ResponseEntity.ok(new UsuarioDTO(criado.getId(), criado.getEmail(), criado.getPerfil()));
     }
 
-    // Login
+    /**
+     * Login de usuário
+     */
     @PostMapping("/login")
+    @Operation(
+            summary = "Login de usuário",
+            description = "Realiza autenticação e retorna um token JWT. Endpoint público, não requer autenticação."
+    )
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         try {
             Authentication auth = authenticationManager.authenticate(
@@ -47,10 +61,25 @@ public class AuthController {
             Usuario usuario = (Usuario) auth.getPrincipal();
             String token = jwtUtil.generateToken(usuario.getEmail());
 
-            return ResponseEntity.ok(new JwtResponse(token, new UsuarioDTO(usuario.getId(), usuario.getEmail(), usuario.getPerfil())));
+            return ResponseEntity.ok(new JwtResponse(token,
+                    new UsuarioDTO(usuario.getId(), usuario.getEmail(), usuario.getPerfil())));
         } catch (AuthenticationException e) {
             return ResponseEntity.status(401).body("Email ou senha inválidos");
         }
+    }
+
+    /**
+     * Exemplo de endpoint protegido
+     */
+    @GetMapping("/me")
+    @Operation(
+            summary = "Usuário logado",
+            description = "Retorna os dados do usuário autenticado. Requer token JWT.",
+            security = { @SecurityRequirement(name = "bearerAuth") }
+    )
+    public ResponseEntity<?> getMe(Authentication authentication) {
+        Usuario usuario = (Usuario) authentication.getPrincipal();
+        return ResponseEntity.ok(new UsuarioDTO(usuario.getId(), usuario.getEmail(), usuario.getPerfil()));
     }
 
     // DTOs
