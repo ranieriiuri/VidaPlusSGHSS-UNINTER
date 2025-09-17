@@ -70,9 +70,11 @@ public class PacienteController {
      */
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> deletarPaciente(@PathVariable Long id,
-                                                @AuthenticationPrincipal Usuario usuarioLogado) {
+    public ResponseEntity<Void> deletarPaciente(
+            @PathVariable Long id,
+            @AuthenticationPrincipal Usuario usuarioLogado) {
+
         pacienteService.deletarPaciente(id, usuarioLogado);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.noContent().build(); // 204 No Content
     }
 }

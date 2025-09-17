@@ -7,6 +7,7 @@ import com.vidaplus.sghss_backend.model.Usuario;
 import com.vidaplus.sghss_backend.model.enums.PerfilUsuario;
 import com.vidaplus.sghss_backend.repository.PacienteRepository;
 import com.vidaplus.sghss_backend.repository.UsuarioRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -66,13 +67,14 @@ public class PacienteService {
 
     public List<Paciente> listarPacientes(Usuario usuarioLogado) {
         if (usuarioLogado.getPerfil() == PerfilUsuario.PACIENTE) {
-            return pacienteRepository.findByUsuario(usuarioLogado)
+            return pacienteRepository.findByUsuarioId(usuarioLogado.getId())
                     .map(List::of)
                     .orElse(List.of());
         }
         return pacienteRepository.findAll();
     }
 
+    //Método para relatório
     public List<Paciente> listarTodosPacientes() {
         return pacienteRepository.findAll();
     }
@@ -89,6 +91,7 @@ public class PacienteService {
         return paciente;
     }
 
+    @Transactional
     public Paciente atualizarPaciente(Long id, AtualizarPacienteRequest request, Usuario usuarioLogado) {
         if (usuarioLogado.getPerfil() != PerfilUsuario.ADMIN &&
                 usuarioLogado.getPerfil() != PerfilUsuario.MEDICO) {
@@ -97,6 +100,18 @@ public class PacienteService {
 
         Paciente pacienteExistente = pacienteRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Paciente não encontrado."));
+
+        // 🔑 vincular usuário, se vier no request e ainda não estiver vinculado
+        if (request.usuarioId() != null && pacienteExistente.getUsuario() == null) {
+            Usuario usuario = usuarioRepository.findById(request.usuarioId())
+                    .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
+
+            if (usuario.getPerfil() != PerfilUsuario.PACIENTE) {
+                throw new IllegalArgumentException("Somente usuários com perfil PACIENTE podem ser vinculados.");
+            }
+
+            pacienteExistente.setUsuario(usuario);
+        }
 
         pacienteExistente.setNome(request.nome());
         pacienteExistente.setDataNascimento(request.dataNascimento());
@@ -126,16 +141,16 @@ public class PacienteService {
         return pacienteAtualizado;
     }
 
+
     public void deletarPaciente(Long id, Usuario usuarioLogado) {
         if (usuarioLogado.getPerfil() != PerfilUsuario.ADMIN) {
             throw new AccessDeniedException("Apenas administradores podem deletar pacientes.");
         }
 
-        if (!pacienteRepository.existsById(id)) {
-            throw new IllegalArgumentException("Paciente não encontrado.");
-        }
+        Paciente pacienteExistente = pacienteRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Paciente não encontrado."));
 
-        pacienteRepository.deleteById(id);
+        pacienteRepository.delete(pacienteExistente);
 
         auditLogService.registrarAcao(
                 usuarioLogado.getId(),
@@ -143,10 +158,11 @@ public class PacienteService {
                 usuarioLogado.getPerfil().name(),
                 "DELETAR_PACIENTE",
                 "Paciente",
-                id,
-                null
+                pacienteExistente.getId(),
+                "Nome: " + pacienteExistente.getNome() + ", Telefone: " + pacienteExistente.getTelefone()
         );
     }
+
 
     public List<Notificacao> listarNotificacoes(Long pacienteId, Usuario usuarioLogado) {
         Paciente paciente = buscarPorId(pacienteId, usuarioLogado);
