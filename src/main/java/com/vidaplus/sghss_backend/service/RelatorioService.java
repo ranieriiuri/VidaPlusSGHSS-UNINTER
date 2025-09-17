@@ -2,6 +2,7 @@ package com.vidaplus.sghss_backend.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.vidaplus.sghss_backend.dto.AgendaMedicaRespostaDTO;
 import com.vidaplus.sghss_backend.dto.RelatorioCompletoDTO;
 import com.vidaplus.sghss_backend.model.*;
 import com.vidaplus.sghss_backend.model.enums.PerfilUsuario;
@@ -46,7 +47,7 @@ public class RelatorioService {
         List<Medico> medicos = medicoService.listarTodosMedicos();
         List<Consulta> consultas = consultaService.listarTodasConsultas();
         List<Prontuario> prontuarios = prontuarioService.listarTodosProntuarios();
-        List<AgendaMedicaSlot> slots = agendaSlotService.listarTodosSlots();
+        List<AgendaMedicaRespostaDTO> slots = agendaSlotService.listarTodosSlots();
 
         // Criar objeto DTO temporário
         RelatorioCompletoDTO relatorioDTO = new RelatorioCompletoDTO(
@@ -159,9 +160,9 @@ public class RelatorioService {
 
             // Agenda Médica
             y = escreverLinha(content, y - 20, "Agenda Médica:", PDType1Font.HELVETICA_BOLD, 14);
-            List<AgendaMedicaSlot> slots = agendaSlotService.listarTodosSlots();
-            for (AgendaMedicaSlot s : slots) {
-                y = escreverLinhaComQuebraPagina(doc, content, y, "- Médico: " + s.getMedico().getNome() +
+            List<AgendaMedicaRespostaDTO> slots = agendaSlotService.listarTodosSlots();
+            for (AgendaMedicaRespostaDTO s : slots) {
+                y = escreverLinhaComQuebraPagina(doc, content, y, "- Médico: " + s.getMedicoNome() +
                         " | Data: " + s.getData() +
                         " | Hora: " + s.getHora(), PDType1Font.HELVETICA, 12);
             }
@@ -241,8 +242,8 @@ public class RelatorioService {
 
             // Agenda Médica
             y = escreverLinha(content, y - 20, "Agenda Médica:", PDType1Font.HELVETICA_BOLD, 14);
-            for (AgendaMedicaSlot s : relatorioDTO.getSlots()) {
-                y = escreverLinhaComQuebraPagina(doc, content, y, "- Médico: " + s.getMedico().getNome() +
+            for (AgendaMedicaRespostaDTO s : relatorioDTO.getSlots()) {
+                y = escreverLinhaComQuebraPagina(doc, content, y, "- Médico: " + s.getMedicoNome()+
                         " | Data: " + s.getData() +
                         " | Hora: " + s.getHora(), PDType1Font.HELVETICA, 12);
             }

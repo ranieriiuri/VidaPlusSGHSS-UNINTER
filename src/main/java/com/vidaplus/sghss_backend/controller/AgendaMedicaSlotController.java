@@ -1,7 +1,7 @@
 package com.vidaplus.sghss_backend.controller;
 
-import com.vidaplus.sghss_backend.dto.MedicoDTO;
-import com.vidaplus.sghss_backend.model.AgendaMedicaSlot;
+import com.vidaplus.sghss_backend.dto.AgendaMedicaRespostaDTO;
+import com.vidaplus.sghss_backend.dto.CriarSlotRequest;
 import com.vidaplus.sghss_backend.model.Consulta;
 import com.vidaplus.sghss_backend.model.Medico;
 import com.vidaplus.sghss_backend.model.Usuario;
@@ -25,16 +25,17 @@ public class AgendaMedicaSlotController {
     private final AgendaMedicaSlotService agendaSlotService;
     private final MedicoService medicoService;
 
-    /**
-     * Listar todos os slots de um médico
-     */
     @GetMapping("/medico/{medicoId}")
-    public List<AgendaMedicaSlot> listarSlots(
+    public List<AgendaMedicaRespostaDTO> listarSlotsPorMedico(
             @PathVariable Long medicoId,
             @AuthenticationPrincipal Usuario usuarioLogado) {
 
         Medico medico = medicoService.buscarEntidadePorId(medicoId, usuarioLogado);
 
+        if (usuarioLogado.getPerfil() == PerfilUsuario.MEDICO &&
+                !medico.getUsuario().getId().equals(usuarioLogado.getId())) {
+            throw new AccessDeniedException("Médico só pode listar slots dele mesmo.");
+        }
         if (usuarioLogado.getPerfil() == PerfilUsuario.PACIENTE) {
             throw new AccessDeniedException("Paciente não pode acessar agenda de médico.");
         }
@@ -42,32 +43,23 @@ public class AgendaMedicaSlotController {
         return agendaSlotService.listarSlots(medico);
     }
 
-    /**
-     * Listar slots disponíveis de um médico em uma data
-     */
+    // Pacientes tbm podem ver vagas de agenda disponiveis dos medicos
     @GetMapping("/medico/{medicoId}/disponiveis")
-    public List<AgendaMedicaSlot> listarSlotsDisponiveis(
+    public List<AgendaMedicaRespostaDTO> listarSlotsDisponiveis(
             @PathVariable Long medicoId,
             @RequestParam LocalDate data,
             @AuthenticationPrincipal Usuario usuarioLogado) {
 
         Medico medico = medicoService.buscarEntidadePorId(medicoId, usuarioLogado);
 
-        if (usuarioLogado.getPerfil() == PerfilUsuario.PACIENTE) {
-            throw new AccessDeniedException("Paciente não pode acessar agenda de médico.");
-        }
-
         return agendaSlotService.listarSlotsDisponiveis(medico, data);
     }
 
-    /**
-     * Criar um novo slot
-     */
+    // Recebe id do medico da uri e data e hora do body
     @PostMapping("/medico/{medicoId}/novo")
-    public AgendaMedicaSlot criarSlot(
+    public AgendaMedicaRespostaDTO criarSlot(
             @PathVariable Long medicoId,
-            @RequestParam LocalDate data,
-            @RequestParam LocalTime hora,
+            @RequestBody CriarSlotRequest request,
             @AuthenticationPrincipal Usuario usuarioLogado) {
 
         Medico medico = medicoService.buscarEntidadePorId(medicoId, usuarioLogado);
@@ -77,20 +69,17 @@ public class AgendaMedicaSlotController {
             throw new AccessDeniedException("Médico só pode criar slots para si mesmo.");
         }
 
-        return agendaSlotService.criarSlot(medico, data, hora, usuarioLogado);
+        return agendaSlotService.criarSlot(medico, request.getData(), request.getHora(), usuarioLogado);
     }
 
-    /**
-     * Bloquear ou liberar slot
-     */
     @PatchMapping("/{slotId}/disponivel")
-    public AgendaMedicaSlot setDisponivel(
+    public AgendaMedicaRespostaDTO setDisponivel(
             @PathVariable Long slotId,
             @RequestParam boolean disponivel,
             @AuthenticationPrincipal Usuario usuarioLogado) {
 
-        AgendaMedicaSlot slot = agendaSlotService.buscarPorId(slotId);
-        Medico medico = slot.getMedico();
+        AgendaMedicaRespostaDTO slot = agendaSlotService.buscarPorId(slotId);
+        Medico medico = medicoService.buscarEntidadePorId(slot.getMedicoId(), usuarioLogado);
 
         if (usuarioLogado.getPerfil() == PerfilUsuario.MEDICO &&
                 !medico.getUsuario().getId().equals(usuarioLogado.getId())) {
@@ -100,28 +89,48 @@ public class AgendaMedicaSlotController {
         return agendaSlotService.setDisponivel(slotId, disponivel, usuarioLogado);
     }
 
-    /**
-     * Vincular slot a uma consulta
-     */
+    // Vincula a vaga disponivel a uma consulta
     @PostMapping("/{slotId}/agendar")
-    public AgendaMedicaSlot agendarConsulta(
+    public AgendaMedicaRespostaDTO vincularConsulta(
             @PathVariable Long slotId,
             @RequestBody Consulta consulta,
             @AuthenticationPrincipal Usuario usuarioLogado) {
 
-        AgendaMedicaSlot slot = agendaSlotService.buscarPorId(slotId);
+        AgendaMedicaRespostaDTO slot = agendaSlotService.buscarPorId(slotId);
 
         if (!slot.isDisponivel()) {
             throw new IllegalStateException("Slot já está ocupado.");
         }
 
         // Apenas ADMIN ou o próprio médico podem agendar
-        Medico medico = slot.getMedico();
+        Medico medico = medicoService.buscarEntidadePorId(slot.getMedicoId(), usuarioLogado);
+
         if (usuarioLogado.getPerfil() == PerfilUsuario.MEDICO &&
                 !medico.getUsuario().getId().equals(usuarioLogado.getId())) {
             throw new AccessDeniedException("Médico só pode agendar em seus próprios slots.");
         }
 
         return agendaSlotService.vincularConsulta(slotId, consulta, usuarioLogado);
+    }
+
+    // Todos que souberem o id de um slot, podem buscá-lo
+    @GetMapping("/{slotId}")
+    public AgendaMedicaRespostaDTO buscarSlotPorId(
+            @PathVariable Long slotId,
+            @AuthenticationPrincipal Usuario usuarioLogado) {
+
+        return agendaSlotService.buscarPorId(slotId);
+    }
+
+    // Listar todos, para fim de auditoria ou conferência
+    @GetMapping("/todos")
+    public List<AgendaMedicaRespostaDTO> listarTodosSlots(
+            @AuthenticationPrincipal Usuario usuarioLogado) {
+
+        if (usuarioLogado.getPerfil() != PerfilUsuario.ADMIN) {
+            throw new AccessDeniedException("Apenas ADMIN pode listar todos os slots.");
+        }
+
+        return agendaSlotService.listarTodosSlots();
     }
 }

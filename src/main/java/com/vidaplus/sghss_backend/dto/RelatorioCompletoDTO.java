@@ -18,6 +18,6 @@ public class RelatorioCompletoDTO {
     private List<Medico> medicos;
     private List<Consulta> consultas;
     private List<Prontuario> prontuarios;
-    private List<AgendaMedicaSlot> slots;
+    private List<AgendaMedicaRespostaDTO> slots;
 
 }

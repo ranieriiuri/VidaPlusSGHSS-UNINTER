@@ -13,30 +13,39 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 
+import com.vidaplus.sghss_backend.dto.AgendaMedicaRespostaDTO;
+import com.vidaplus.sghss_backend.mapper.AgendaMedicaSlotMapper;
+
 @Service
 @RequiredArgsConstructor
 public class AgendaMedicaSlotService {
 
     private final AgendaMedicaSlotRepository agendaSlotRepository;
     private final MedicoRepository medicoRepository;
-    private final AuditLogService auditLogService; // ← adicionado para logs
+    private final AuditLogService auditLogService;
 
-    // Listar todos os slots de um médico
-    public List<AgendaMedicaSlot> listarSlots(Medico medico) {
-        return agendaSlotRepository.findByMedico(medico);
+    public List<AgendaMedicaRespostaDTO> listarSlots(Medico medico) {
+        return agendaSlotRepository.findByMedico(medico)
+                .stream()
+                .map(AgendaMedicaSlotMapper::toDTO)
+                .toList();
     }
 
-    // Listar slots disponíveis de um médico
-    public List<AgendaMedicaSlot> listarSlotsDisponiveis(Medico medico, LocalDate data) {
-        return agendaSlotRepository.findByMedicoAndDataAndDisponivelTrue(medico, data);
+    public List<AgendaMedicaRespostaDTO> listarSlotsDisponiveis(Medico medico, LocalDate data) {
+        return agendaSlotRepository.findByMedicoAndDataAndDisponivelTrue(medico, data)
+                .stream()
+                .map(AgendaMedicaSlotMapper::toDTO)
+                .toList();
     }
 
-    public List<AgendaMedicaSlot> listarTodosSlots() {
-        return agendaSlotRepository.findAll();
+    public List<AgendaMedicaRespostaDTO> listarTodosSlots() {
+        return agendaSlotRepository.findAll()
+                .stream()
+                .map(AgendaMedicaSlotMapper::toDTO)
+                .toList();
     }
 
-    // Criar um novo slot
-    public AgendaMedicaSlot criarSlot(Medico medico, LocalDate data, LocalTime hora, Usuario usuarioLogado) {
+    public AgendaMedicaRespostaDTO criarSlot(Medico medico, LocalDate data, LocalTime hora, Usuario usuarioLogado) {
         if (agendaSlotRepository.existsByMedicoAndDataAndHora(medico, data, hora)) {
             throw new IllegalArgumentException("Slot já existe para essa data e hora.");
         }
@@ -60,11 +69,10 @@ public class AgendaMedicaSlotService {
                 "Médico: " + medico.getNome() + ", Data: " + data + ", Hora: " + hora
         );
 
-        return salvo;
+        return AgendaMedicaSlotMapper.toDTO(salvo);
     }
 
-    // Bloquear/Desbloquear slot
-    public AgendaMedicaSlot setDisponivel(Long slotId, boolean disponivel, Usuario usuarioLogado) {
+    public AgendaMedicaRespostaDTO setDisponivel(Long slotId, boolean disponivel, Usuario usuarioLogado) {
         AgendaMedicaSlot slot = agendaSlotRepository.findById(slotId)
                 .orElseThrow(() -> new IllegalArgumentException("Slot não encontrado."));
         slot.setDisponivel(disponivel);
@@ -80,11 +88,10 @@ public class AgendaMedicaSlotService {
                 "Médico: " + slot.getMedico().getNome() + ", Data: " + slot.getData() + ", Hora: " + slot.getHora()
         );
 
-        return salvo;
+        return AgendaMedicaSlotMapper.toDTO(salvo);
     }
 
-    // Vincular slot a uma consulta
-    public AgendaMedicaSlot vincularConsulta(Long slotId, Consulta consulta, Usuario usuarioLogado) {
+    public AgendaMedicaRespostaDTO vincularConsulta(Long slotId, Consulta consulta, Usuario usuarioLogado) {
         AgendaMedicaSlot slot = agendaSlotRepository.findById(slotId)
                 .orElseThrow(() -> new IllegalArgumentException("Slot não encontrado."));
         if (!slot.isDisponivel()) {
@@ -106,11 +113,12 @@ public class AgendaMedicaSlotService {
                         ", Data: " + slot.getData() + ", Hora: " + slot.getHora()
         );
 
-        return salvo;
+        return AgendaMedicaSlotMapper.toDTO(salvo);
     }
 
-    public AgendaMedicaSlot buscarPorId(Long slotId) {
-        return agendaSlotRepository.findById(slotId)
+    public AgendaMedicaRespostaDTO buscarPorId(Long slotId) {
+        AgendaMedicaSlot slot = agendaSlotRepository.findById(slotId)
                 .orElseThrow(() -> new IllegalArgumentException("Slot não encontrado."));
+        return AgendaMedicaSlotMapper.toDTO(slot);
     }
 }

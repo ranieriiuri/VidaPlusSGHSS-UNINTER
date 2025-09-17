@@ -1,8 +1,6 @@
 package com.vidaplus.sghss_backend.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.vidaplus.sghss_backend.model.Consulta;
-import com.vidaplus.sghss_backend.model.Medico;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
