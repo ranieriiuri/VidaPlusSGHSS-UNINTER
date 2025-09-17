@@ -14,7 +14,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/audit")
 @RequiredArgsConstructor
-@PreAuthorize("hasAuthority('ADMIN')")
+@PreAuthorize("hasRole('ADMIN')")
 public class AuditLogController {
 
     private final AuditLogRepository auditLogRepository;
