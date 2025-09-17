@@ -25,7 +25,7 @@ public class Consulta {
     @Column(nullable = false)
     private LocalTime hora;
 
-    @Enumerated(EnumType.STRING) // salva AGENDADA, REALIZADA, CANCELADA como texto no banco
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private StatusConsulta status;
 

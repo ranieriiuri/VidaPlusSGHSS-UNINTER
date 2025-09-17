@@ -2,6 +2,7 @@ package com.vidaplus.sghss_backend.service;
 
 import com.vidaplus.sghss_backend.dto.AgendaMedicaRespostaDTO;
 import com.vidaplus.sghss_backend.dto.CriarConsultaRequest;
+import com.vidaplus.sghss_backend.dto.VincularConsultaRequest;
 import com.vidaplus.sghss_backend.model.Consulta;
 import com.vidaplus.sghss_backend.model.Medico;
 import com.vidaplus.sghss_backend.model.Usuario;
@@ -21,7 +22,7 @@ public class AgendamentoService {
     /**
      * Agendar uma consulta usando um slot já existente
      */
-    public AgendaMedicaRespostaDTO agendarConsulta(Long slotId, CriarConsultaRequest request, Usuario usuarioLogado) {
+    public AgendaMedicaRespostaDTO vincularConsulta(Long slotId, CriarConsultaRequest request, Usuario usuarioLogado) {
 
         // 1️⃣ Buscar slot existente
         AgendaMedicaRespostaDTO slotDTO = agendaSlotService.buscarPorId(slotId);

@@ -81,7 +81,7 @@ public class AgendaMedicaSlotController {
             @AuthenticationPrincipal Usuario usuarioLogado) {
 
         // Apenas delega para a fachada de agendamento
-        return agendamentoService.agendarConsulta(slotId, request, usuarioLogado);
+        return agendamentoService.vincularConsulta(slotId, request, usuarioLogado);
     }
 
 
