@@ -1,12 +1,14 @@
 package com.vidaplus.sghss_backend.service;
 
 import com.vidaplus.sghss_backend.dto.AtualizarPacienteRequest;
+import com.vidaplus.sghss_backend.dto.NotificacaoDTO;
 import com.vidaplus.sghss_backend.model.Notificacao;
 import com.vidaplus.sghss_backend.model.Paciente;
 import com.vidaplus.sghss_backend.model.Usuario;
 import com.vidaplus.sghss_backend.model.enums.PerfilUsuario;
 import com.vidaplus.sghss_backend.repository.PacienteRepository;
 import com.vidaplus.sghss_backend.repository.UsuarioRepository;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
@@ -90,6 +92,11 @@ public class PacienteService {
 
         return paciente;
     }
+    public Paciente buscarPorUsuario(Usuario usuario) {
+        return pacienteRepository.findByUsuario(usuario)
+                .orElseThrow(() -> new EntityNotFoundException("Paciente não encontrado para o usuário logado."));
+    }
+
 
     @Transactional
     public Paciente atualizarPaciente(Long id, AtualizarPacienteRequest request, Usuario usuarioLogado) {
@@ -195,4 +202,5 @@ public class PacienteService {
                 null
         );
     }
+
 }

@@ -5,8 +5,10 @@ import com.vidaplus.sghss_backend.model.Paciente;
 import com.vidaplus.sghss_backend.model.Usuario;
 import com.vidaplus.sghss_backend.model.enums.TipoNotificacao;
 import com.vidaplus.sghss_backend.repository.NotificacaoRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -16,11 +18,9 @@ import java.util.List;
 public class NotificacaoService {
 
     private final NotificacaoRepository notificacaoRepository;
-    private final AuditLogService auditLogService; // ← audit logs
+    private final AuditLogService auditLogService;
 
-    /**
-     * Enviar uma nova notificação para o paciente
-     */
+    /** Enviar notificação para paciente */
     public Notificacao enviarNotificacao(Paciente paciente, String mensagem, String tipo, Usuario usuarioLogado) {
         Notificacao notificacao = Notificacao.builder()
                 .paciente(paciente)
@@ -32,7 +32,6 @@ public class NotificacaoService {
 
         Notificacao salvo = notificacaoRepository.save(notificacao);
 
-        // Registrar log de auditoria
         if (usuarioLogado != null) {
             auditLogService.registrarAcao(
                     usuarioLogado.getId(),
@@ -45,33 +44,34 @@ public class NotificacaoService {
             );
         }
 
-        return salvo;
+        return salvo; // retorna ENTIDADE
     }
 
-    /**
-     * Listar todas as notificações de um paciente
-     */
+    /** Listar todas as notificações de um paciente */
     public List<Notificacao> listarNotificacoesPaciente(Paciente paciente) {
         return notificacaoRepository.findByPaciente(paciente);
     }
 
     /**
-     * Listar notificações não lidas de um paciente
+     * Listar todas as notificações do sistema
+     * Apenas ADMIN podem acessar (controle via controller)
      */
+    public List<Notificacao> listarTodasNotificacoes() {
+        return notificacaoRepository.findAll();
+    }
+
+    /** Listar notificações não lidas de um paciente */
     public List<Notificacao> listarNaoLidas(Paciente paciente) {
         return notificacaoRepository.findByPacienteAndLidaFalse(paciente);
     }
 
-    /**
-     * Marcar notificação como lida
-     */
+    /** Marcar notificação como lida */
     public void marcarComoLida(Long notificacaoId, Usuario usuarioLogado) {
         Notificacao notificacao = notificacaoRepository.findById(notificacaoId)
-                .orElseThrow(() -> new IllegalArgumentException("Notificação não encontrada."));
+                .orElseThrow(() -> new EntityNotFoundException("Notificação não encontrada."));
         notificacao.setLida(true);
         notificacaoRepository.save(notificacao);
 
-        // Registrar log de auditoria
         if (usuarioLogado != null) {
             auditLogService.registrarAcao(
                     usuarioLogado.getId(),
@@ -85,11 +85,9 @@ public class NotificacaoService {
         }
     }
 
-    /**
-     * Buscar notificação por ID
-     */
+    /** Buscar notificação por ID */
     public Notificacao buscarPorId(Long notificacaoId) {
         return notificacaoRepository.findById(notificacaoId)
-                .orElseThrow(() -> new IllegalArgumentException("Notificação não encontrada."));
+                .orElseThrow(() -> new EntityNotFoundException("Notificação não encontrada."));
     }
 }

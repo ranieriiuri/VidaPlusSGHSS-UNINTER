@@ -85,6 +85,11 @@ public class ProntuarioService {
                 .toList();
     }
 
+    // Metodo interno
+    public List<Prontuario> listarTodosProntuarios() {
+        return prontuarioRepository.findAll();
+    }
+
     // Buscar por ID
     public ProntuarioDTO buscarPorId(Long id, Usuario usuarioLogado) {
         Prontuario prontuario = prontuarioRepository.findById(id)
