@@ -91,31 +91,6 @@ public class AgendaMedicaSlotService {
         return AgendaMedicaSlotMapper.toDTO(salvo);
     }
 
-    public AgendaMedicaRespostaDTO vincularConsulta(Long slotId, Consulta consulta, Usuario usuarioLogado) {
-        AgendaMedicaSlot slot = agendaSlotRepository.findById(slotId)
-                .orElseThrow(() -> new IllegalArgumentException("Slot não encontrado."));
-        if (!slot.isDisponivel()) {
-            throw new IllegalStateException("Slot já está ocupado.");
-        }
-        slot.setConsulta(consulta);
-        slot.setDisponivel(false);
-        AgendaMedicaSlot salvo = agendaSlotRepository.save(slot);
-
-        auditLogService.registrarAcao(
-                usuarioLogado.getId(),
-                usuarioLogado.getEmail(),
-                usuarioLogado.getPerfil().name(),
-                "VINCULAR_CONSULTA_SLOT",
-                "AgendaMedicaSlot",
-                slotId,
-                "Consulta ID: " + consulta.getId() + ", Paciente: " + consulta.getPaciente().getNome() +
-                        ", Médico: " + consulta.getMedico().getNome() +
-                        ", Data: " + slot.getData() + ", Hora: " + slot.getHora()
-        );
-
-        return AgendaMedicaSlotMapper.toDTO(salvo);
-    }
-
     public AgendaMedicaRespostaDTO buscarPorId(Long slotId) {
         AgendaMedicaSlot slot = agendaSlotRepository.findById(slotId)
                 .orElseThrow(() -> new IllegalArgumentException("Slot não encontrado."));

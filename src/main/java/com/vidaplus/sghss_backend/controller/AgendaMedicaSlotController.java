@@ -1,12 +1,13 @@
 package com.vidaplus.sghss_backend.controller;
 
 import com.vidaplus.sghss_backend.dto.AgendaMedicaRespostaDTO;
+import com.vidaplus.sghss_backend.dto.CriarConsultaRequest;
 import com.vidaplus.sghss_backend.dto.CriarSlotRequest;
-import com.vidaplus.sghss_backend.model.Consulta;
 import com.vidaplus.sghss_backend.model.Medico;
 import com.vidaplus.sghss_backend.model.Usuario;
 import com.vidaplus.sghss_backend.model.enums.PerfilUsuario;
 import com.vidaplus.sghss_backend.service.AgendaMedicaSlotService;
+import com.vidaplus.sghss_backend.service.AgendamentoService;
 import com.vidaplus.sghss_backend.service.MedicoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
@@ -14,7 +15,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
-import java.time.LocalTime;
 import java.util.List;
 
 @RestController
@@ -24,6 +24,7 @@ public class AgendaMedicaSlotController {
 
     private final AgendaMedicaSlotService agendaSlotService;
     private final MedicoService medicoService;
+    private final AgendamentoService agendamentoService;
 
     @GetMapping("/medico/{medicoId}")
     public List<AgendaMedicaRespostaDTO> listarSlotsPorMedico(
@@ -72,6 +73,18 @@ public class AgendaMedicaSlotController {
         return agendaSlotService.criarSlot(medico, request.getData(), request.getHora(), usuarioLogado);
     }
 
+    // Usa um facade service para vincular um slot existente a criacao de uma consulta
+    @PostMapping("/{slotId}/agendar")
+    public AgendaMedicaRespostaDTO vincularConsulta(
+            @PathVariable Long slotId,
+            @RequestBody CriarConsultaRequest request,
+            @AuthenticationPrincipal Usuario usuarioLogado) {
+
+        // Apenas delega para a fachada de agendamento
+        return agendamentoService.agendarConsulta(slotId, request, usuarioLogado);
+    }
+
+
     @PatchMapping("/{slotId}/disponivel")
     public AgendaMedicaRespostaDTO setDisponivel(
             @PathVariable Long slotId,
@@ -87,30 +100,6 @@ public class AgendaMedicaSlotController {
         }
 
         return agendaSlotService.setDisponivel(slotId, disponivel, usuarioLogado);
-    }
-
-    // Vincula a vaga disponivel a uma consulta
-    @PostMapping("/{slotId}/agendar")
-    public AgendaMedicaRespostaDTO vincularConsulta(
-            @PathVariable Long slotId,
-            @RequestBody Consulta consulta,
-            @AuthenticationPrincipal Usuario usuarioLogado) {
-
-        AgendaMedicaRespostaDTO slot = agendaSlotService.buscarPorId(slotId);
-
-        if (!slot.isDisponivel()) {
-            throw new IllegalStateException("Slot já está ocupado.");
-        }
-
-        // Apenas ADMIN ou o próprio médico podem agendar
-        Medico medico = medicoService.buscarEntidadePorId(slot.getMedicoId(), usuarioLogado);
-
-        if (usuarioLogado.getPerfil() == PerfilUsuario.MEDICO &&
-                !medico.getUsuario().getId().equals(usuarioLogado.getId())) {
-            throw new AccessDeniedException("Médico só pode agendar em seus próprios slots.");
-        }
-
-        return agendaSlotService.vincularConsulta(slotId, consulta, usuarioLogado);
     }
 
     // Todos que souberem o id de um slot, podem buscá-lo
