@@ -27,7 +27,13 @@ public class Relatorio {
 
     private LocalDateTime dataGeracao;
 
-    @ManyToOne
-    @JoinColumn(name = "usuario_id")
-    private Usuario geradoPor; // apenas ADMIN pode gerar
+    @Column(name = "gerado_por_id")
+    private Long geradoPorId;
+
+    @Column(name = "gerado_por_email")
+    private String geradoPorEmail;
+
+    @Column(name = "gerado_por_perfil")
+    private String geradoPorPerfil;
+
 }

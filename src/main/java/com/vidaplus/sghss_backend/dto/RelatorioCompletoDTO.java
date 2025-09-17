@@ -20,4 +20,5 @@ public class RelatorioCompletoDTO {
     private List<Prontuario> prontuarios;
     private List<AgendaMedicaRespostaDTO> slots;
 
+    private AdminRespostaDTO adminGerador;
 }

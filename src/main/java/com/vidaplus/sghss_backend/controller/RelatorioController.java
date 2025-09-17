@@ -1,6 +1,7 @@
 package com.vidaplus.sghss_backend.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.vidaplus.sghss_backend.dto.AdminRespostaDTO;
 import com.vidaplus.sghss_backend.dto.RelatorioCompletoDTO;
 import com.vidaplus.sghss_backend.model.Relatorio;
 import com.vidaplus.sghss_backend.model.Usuario;
@@ -18,33 +19,36 @@ import java.util.List;
 @RestController
 @RequestMapping("/relatorios")
 @RequiredArgsConstructor
-@PreAuthorize("hasAuthority('ADMIN')") // Apenas ADMIN pode acessar qualquer endpoint
+@PreAuthorize("hasRole('ADMIN')") // Apenas ADMIN pode acessar qualquer endpoint
 public class RelatorioController {
 
     private final RelatorioService relatorioService;
     private final ObjectMapper objectMapper; // injeta direto aqui
 
-    /**
-     * Endpoint para gerar relatório completo e salvar no banco
-     */
-    @PostMapping("/completo")
-    public ResponseEntity<Relatorio> gerarRelatorioCompleto(@AuthenticationPrincipal Usuario usuarioLogado) {
-        Relatorio relatorio = relatorioService.gerarRelatorioCompleto(usuarioLogado);
-        return ResponseEntity.ok(relatorio);
-    }
+   //Traz um relatorio atual completo em json
+   @PostMapping("/completo")
+   public ResponseEntity<RelatorioCompletoDTO> gerarRelatorioCompleto(@AuthenticationPrincipal Usuario usuarioLogado) {
+       Relatorio relatorio = relatorioService.gerarRelatorioCompleto(usuarioLogado);
 
-    /**
-     * Endpoint para listar todos os relatórios gerados
-     */
+       // Desserializa o JSON armazenado no DB para enviar ao front-end
+       RelatorioCompletoDTO relatorioDTO;
+       try {
+           relatorioDTO = objectMapper.readValue(relatorio.getConteudoJson(), RelatorioCompletoDTO.class);
+       } catch (Exception e) {
+           throw new RuntimeException("Erro ao ler JSON do relatório", e);
+       }
+
+       return ResponseEntity.ok(relatorioDTO);
+   }
+
+    //Lista todos em json
     @GetMapping
     public ResponseEntity<List<Relatorio>> listarRelatorios(@AuthenticationPrincipal Usuario usuarioLogado) {
         List<Relatorio> relatorios = relatorioService.listarRelatorios(usuarioLogado);
         return ResponseEntity.ok(relatorios);
     }
 
-    /**
-     * Endpoint para buscar relatório específico pelo ID
-     */
+    //Esse busca por id
     @GetMapping("/{id}")
     public ResponseEntity<Relatorio> buscarRelatorioPorId(@PathVariable Long id,
                                                           @AuthenticationPrincipal Usuario usuarioLogado) {
@@ -52,9 +56,7 @@ public class RelatorioController {
         return ResponseEntity.ok(relatorio);
     }
 
-    /**
-     * Endpoint para gerar e baixar PDF do relatório completo
-     */
+    //Esse gera o pdf atual geral e já baixa
     @GetMapping("/completo/pdf")
     public ResponseEntity<byte[]> baixarPdfRelatorioCompleto() {
         byte[] pdf = relatorioService.gerarPdfRelatorioCompleto();
@@ -68,8 +70,11 @@ public class RelatorioController {
                 .body(pdf);
     }
 
+    //Esse busca relatorio salvo anteriormente no banco, gera o pdf e disponibiliza
+    /* POR ENQUANTO, CONGELADO!
+
     @GetMapping("/{id}/pdf")
-    public ResponseEntity<byte[]> baixarRelatorioPdf(@PathVariable Long id, @AuthenticationPrincipal Usuario usuarioLogado) {
+    public ResponseEntity<byte[]> baixarRelatorioPdfPorId(@PathVariable Long id, @AuthenticationPrincipal Usuario usuarioLogado) {
         Relatorio relatorio = relatorioService.buscarPorId(id, usuarioLogado);
         RelatorioCompletoDTO dto;
         try {
@@ -85,4 +90,5 @@ public class RelatorioController {
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(pdf);
     }
+     */
 }

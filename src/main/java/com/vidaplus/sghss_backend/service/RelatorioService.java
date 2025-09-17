@@ -2,6 +2,7 @@ package com.vidaplus.sghss_backend.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.vidaplus.sghss_backend.dto.AdminRespostaDTO;
 import com.vidaplus.sghss_backend.dto.AgendaMedicaRespostaDTO;
 import com.vidaplus.sghss_backend.dto.RelatorioCompletoDTO;
 import com.vidaplus.sghss_backend.model.*;
@@ -34,9 +35,6 @@ public class RelatorioService {
     private final ObjectMapper objectMapper;
     private final AuditLogService auditLogService; // ← Adicionado
 
-    /**
-     * Gera um relatório completo do sistema e salva no banco
-     */
     public Relatorio gerarRelatorioCompleto(Usuario usuarioLogado) {
         if (usuarioLogado.getPerfil() != PerfilUsuario.ADMIN) {
             throw new AccessDeniedException("Apenas administradores podem gerar relatórios.");
@@ -49,12 +47,24 @@ public class RelatorioService {
         List<Prontuario> prontuarios = prontuarioService.listarTodosProntuarios();
         List<AgendaMedicaRespostaDTO> slots = agendaSlotService.listarTodosSlots();
 
-        // Criar objeto DTO temporário
-        RelatorioCompletoDTO relatorioDTO = new RelatorioCompletoDTO(
-                pacientes, medicos, consultas, prontuarios, slots
+        // Criar DTO seguro do usuário que gerou o relatório (somente id, email e perfil)
+        AdminRespostaDTO adminDTO = new AdminRespostaDTO(
+                usuarioLogado.getId(),
+                usuarioLogado.getEmail(),
+                usuarioLogado.getPerfil().toString()
         );
 
-        // Converter para JSON
+        // Criar DTO do relatório completo
+        RelatorioCompletoDTO relatorioDTO = new RelatorioCompletoDTO(
+                pacientes,
+                medicos,
+                consultas,
+                prontuarios,
+                slots,
+                adminDTO // garante que senha do admin não será exposta
+        );
+
+        // Converter DTO para JSON
         String conteudoJson;
         try {
             conteudoJson = objectMapper.writeValueAsString(relatorioDTO);
@@ -62,12 +72,14 @@ public class RelatorioService {
             throw new RuntimeException("Erro ao gerar JSON do relatório.", e);
         }
 
-        // Criar entidade Relatorio
+        // Criar entidade Relatorio (salva usuário completo internamente, sem expor senha no JSON)
         Relatorio relatorio = Relatorio.builder()
                 .nome("Relatório completo - " + LocalDateTime.now())
                 .conteudoJson(conteudoJson)
                 .dataGeracao(LocalDateTime.now())
-                .geradoPor(usuarioLogado)
+                .geradoPorId(usuarioLogado.getId())
+                .geradoPorEmail(usuarioLogado.getEmail())
+                .geradoPorPerfil(usuarioLogado.getPerfil().toString())
                 .build();
 
         Relatorio salvo = relatorioRepository.save(relatorio);
@@ -90,9 +102,6 @@ public class RelatorioService {
         return salvo;
     }
 
-    /**
-     * Listar relatórios já gerados por ADMIN
-     */
     public List<Relatorio> listarRelatorios(Usuario usuarioLogado) {
         if (usuarioLogado.getPerfil() != PerfilUsuario.ADMIN) {
             throw new AccessDeniedException("Apenas administradores podem acessar relatórios.");
@@ -101,9 +110,6 @@ public class RelatorioService {
         return relatorioRepository.findAll(); // ou findByGeradoPor(usuarioLogado) se quiser histórico por usuário
     }
 
-    /**
-     * Buscar relatório específico pelo ID
-     */
     public Relatorio buscarPorId(Long id, Usuario usuarioLogado) {
         if (usuarioLogado.getPerfil() != PerfilUsuario.ADMIN) {
             throw new AccessDeniedException("Apenas administradores podem acessar relatórios.");
@@ -198,6 +204,8 @@ public class RelatorioService {
         return escreverLinha(content, y, texto, fonte, tamanho);
     }
 
+    /* POR ENQUANTO, CONGELADO !
+
     // Esse é o que gera apartir de dados salvos no DB
     public byte[] gerarPdfRelatorioCompleto(RelatorioCompletoDTO relatorioDTO) {
         try (PDDocument doc = new PDDocument();
@@ -256,4 +264,5 @@ public class RelatorioService {
             throw new RuntimeException("Erro ao gerar PDF do relatório completo a partir do DTO", e);
         }
     }
+     */
 }
