@@ -1,10 +1,7 @@
 package com.vidaplus.sghss_backend.dto;
 
 import com.vidaplus.sghss_backend.model.enums.StatusConsulta;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -13,10 +10,12 @@ import java.time.LocalTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Getter
 public class CriarConsultaRequest {
-    private LocalDate data;
-    private LocalTime hora;
-    private StatusConsulta status;
     private Long pacienteId;
     private Long medicoId;
+    private Long agendaSlotId; // opcional
+    private LocalDate data;    // opcional se usar slot
+    private LocalTime hora;    // opcional se usar slot
+    private StatusConsulta status;
 }

@@ -1,5 +1,6 @@
 package com.vidaplus.sghss_backend.dto;
 
+import com.vidaplus.sghss_backend.model.Medico;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -15,4 +16,13 @@ public class MedicoDTO {
     private String crm;
     private String especialidade;
     private Long usuarioId;
+
+    public static MedicoDTO from(Medico medico) {
+        return MedicoDTO.builder()
+                .id(medico.getId())
+                .nome(medico.getNome())
+                .crm(medico.getCrm())
+                .especialidade(medico.getEspecialidade())
+                .build();
+    }
 }

@@ -1,10 +1,10 @@
 package com.vidaplus.sghss_backend.service;
 
-import com.vidaplus.sghss_backend.model.Consulta;
-import com.vidaplus.sghss_backend.model.Medico;
-import com.vidaplus.sghss_backend.model.Paciente;
-import com.vidaplus.sghss_backend.model.Usuario;
+import com.vidaplus.sghss_backend.dto.*;
+import com.vidaplus.sghss_backend.model.*;
 import com.vidaplus.sghss_backend.model.enums.PerfilUsuario;
+import com.vidaplus.sghss_backend.model.enums.StatusConsulta;
+import com.vidaplus.sghss_backend.repository.AgendaMedicaSlotRepository;
 import com.vidaplus.sghss_backend.repository.ConsultaRepository;
 import com.vidaplus.sghss_backend.repository.MedicoRepository;
 import com.vidaplus.sghss_backend.repository.PacienteRepository;
@@ -23,28 +23,48 @@ public class ConsultaService {
     private final PacienteRepository pacienteRepository;
     private final MedicoRepository medicoRepository;
     private final AuditLogService auditLogService; // ← audit logs
+    private final AgendaMedicaSlotRepository agendaMedicaSlotRepository;
 
     /**
      * Criar nova consulta
      * ADMIN ou MEDICO podem criar
      */
-    public Consulta criarConsulta(Consulta consulta, Usuario usuarioLogado) {
+    public Consulta criarConsulta(CriarConsultaRequest request, Usuario usuarioLogado) {
         if (usuarioLogado.getPerfil() != PerfilUsuario.ADMIN &&
                 usuarioLogado.getPerfil() != PerfilUsuario.MEDICO) {
             throw new AccessDeniedException("Usuário não autorizado para criar consultas.");
         }
 
-        Paciente paciente = pacienteRepository.findById(consulta.getPaciente().getId())
+        Paciente paciente = pacienteRepository.findById(request.getPacienteId())
                 .orElseThrow(() -> new EntityNotFoundException("Paciente não encontrado."));
-        consulta.setPaciente(paciente);
-
-        Medico medico = medicoRepository.findById(consulta.getMedico().getId())
+        Medico medico = medicoRepository.findById(request.getMedicoId())
                 .orElseThrow(() -> new EntityNotFoundException("Médico não encontrado."));
-        consulta.setMedico(medico);
+
+        Consulta consulta = Consulta.builder()
+                .data(request.getData())
+                .hora(request.getHora())
+                .status(StatusConsulta.AGENDADA) // 🔑 garante status inicial
+                .paciente(paciente)
+                .medico(medico)
+                .build();
+
+        // Se o request tiver um slot de agenda
+        if (request.getAgendaSlotId() != null) {
+            AgendaMedicaSlot slot = agendaMedicaSlotRepository.findById(request.getAgendaSlotId())
+                    .orElseThrow(() -> new EntityNotFoundException("Slot de agenda não encontrado."));
+
+            if (!slot.isDisponivel()) {
+                throw new IllegalStateException("Este slot já está ocupado.");
+            }
+
+            // Faz o vínculo bidirecional
+            slot.setConsulta(consulta);
+            slot.setDisponivel(false); // 🔑 marca slot como indisponível
+            consulta.setAgendaSlot(slot);
+        }
 
         Consulta salvo = consultaRepository.save(consulta);
 
-        // Registrar log
         auditLogService.registrarAcao(
                 usuarioLogado.getId(),
                 usuarioLogado.getEmail(),
@@ -58,18 +78,24 @@ public class ConsultaService {
         return salvo;
     }
 
+
     /**
      * Listar consultas
      */
-    public List<Consulta> listarConsultas(Usuario usuarioLogado) {
-        return switch (usuarioLogado.getPerfil()) {
+    public List<ConsultaDTO> listarConsultas(Usuario usuarioLogado) {
+        List<Consulta> consultas = switch (usuarioLogado.getPerfil()) {
             case ADMIN -> consultaRepository.findAll();
             case MEDICO -> consultaRepository.findByMedicoUsuario(usuarioLogado);
             case PACIENTE -> consultaRepository.findByPacienteUsuario(usuarioLogado);
             default -> throw new AccessDeniedException("Perfil desconhecido.");
         };
+
+        return consultas.stream()
+                .map(ConsultaDTO::from) // método from que converte Consulta -> ConsultaDTO
+                .toList();
     }
 
+    // Método interno Relatorios
     public List<Consulta> listarTodasConsultas() {
         return consultaRepository.findAll();
     }
@@ -77,10 +103,11 @@ public class ConsultaService {
     /**
      * Buscar consulta por ID
      */
-    public Consulta buscarPorId(Long id, Usuario usuarioLogado) {
+    public ConsultaDTO buscarPorId(Long id, Usuario usuarioLogado) {
         Consulta consulta = consultaRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Consulta não encontrada."));
 
+        // Verificação de acesso
         switch (usuarioLogado.getPerfil()) {
             case MEDICO -> {
                 if (!consulta.getMedico().getUsuario().getId().equals(usuarioLogado.getId())) {
@@ -96,14 +123,15 @@ public class ConsultaService {
             default -> throw new AccessDeniedException("Perfil desconhecido.");
         }
 
-        return consulta;
+        // Transformar em DTO para retorno
+        return ConsultaDTO.from(consulta);
     }
 
     /**
      * Atualizar consulta
      * Apenas ADMIN pode alterar
      */
-    public Consulta atualizarConsulta(Long id, Consulta consultaAtualizada, Usuario usuarioLogado) {
+    public Consulta atualizarConsulta(Long id, AtualizarConsultaRequest request, Usuario usuarioLogado) {
         if (usuarioLogado.getPerfil() != PerfilUsuario.ADMIN) {
             throw new AccessDeniedException("Apenas administradores podem atualizar consultas.");
         }
@@ -111,9 +139,22 @@ public class ConsultaService {
         Consulta consultaExistente = consultaRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Consulta não encontrada."));
 
-        consultaExistente.setData(consultaAtualizada.getData());
-        consultaExistente.setHora(consultaAtualizada.getHora());
-        consultaExistente.setStatus(consultaAtualizada.getStatus());
+        // Atualiza apenas campos permitidos
+        consultaExistente.setData(request.getData());
+        consultaExistente.setHora(request.getHora());
+        consultaExistente.setStatus(request.getStatus());
+
+        if (request.getMedicoId() != null) {
+            Medico medico = medicoRepository.findById(request.getMedicoId())
+                    .orElseThrow(() -> new EntityNotFoundException("Médico não encontrado."));
+            consultaExistente.setMedico(medico);
+        }
+
+        if (request.getAgendaSlotId() != null) {
+            AgendaMedicaSlot slot = agendaMedicaSlotRepository.findById(request.getAgendaSlotId())
+                    .orElseThrow(() -> new EntityNotFoundException("Slot de agenda não encontrado."));
+            consultaExistente.setAgendaSlot(slot);
+        }
 
         Consulta salvo = consultaRepository.save(consultaExistente);
 
@@ -125,7 +166,8 @@ public class ConsultaService {
                 "ATUALIZAR_CONSULTA",
                 "Consulta",
                 salvo.getId(),
-                "Paciente: " + salvo.getPaciente().getNome() + ", Médico: " + salvo.getMedico().getNome()
+                "Paciente: " + salvo.getPaciente().getNome() +
+                        ", Médico: " + (salvo.getMedico() != null ? salvo.getMedico().getNome() : "N/A")
         );
 
         return salvo;

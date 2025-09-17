@@ -1,37 +1,35 @@
 package com.vidaplus.sghss_backend.dto;
 
 import com.vidaplus.sghss_backend.model.Consulta;
-import com.vidaplus.sghss_backend.model.enums.StatusConsulta;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDate;
-import java.time.LocalTime;
-
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
+@NoArgsConstructor
 @Builder
 public class ConsultaDTO {
-
     private Long id;
-    private LocalDate data;
-    private LocalTime hora;
-    private StatusConsulta status;
-    private Long pacienteId;
-    private Long medicoId;
+    private String data;
+    private String hora;
+    private String status;
 
-    // Converte entidade para DTO
+    private PacienteDTO paciente;
+    private MedicoDTO medico;
+    private AgendaMedicaSlotDTO agendaSlot; // incluir detalhes da agenda medica
+
     public static ConsultaDTO from(Consulta consulta) {
         return ConsultaDTO.builder()
                 .id(consulta.getId())
-                .data(consulta.getData())
-                .hora(consulta.getHora())
-                .status(consulta.getStatus())
-                .pacienteId(consulta.getPaciente().getId())
-                .medicoId(consulta.getMedico().getId())
+                .data(consulta.getData().toString())
+                .hora(consulta.getHora().toString())
+                .status(consulta.getStatus().name())
+                .paciente(PacienteDTO.from(consulta.getPaciente()))
+                .medico(MedicoDTO.from(consulta.getMedico()))
+                .agendaSlot(consulta.getAgendaSlot() != null ?
+                        AgendaMedicaSlotDTO.from(consulta.getAgendaSlot()) : null)
                 .build();
     }
 }
