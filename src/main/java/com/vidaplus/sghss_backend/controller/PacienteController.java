@@ -19,29 +19,17 @@ public class PacienteController {
 
     private final PacienteService pacienteService;
 
-    /**
-     * Listar pacientes
-     * ADMIN e MEDICO veem todos
-     * PACIENTE vê apenas ele mesmo
-     */
     @GetMapping
     public ResponseEntity<List<Paciente>> listarPacientes(@AuthenticationPrincipal Usuario usuarioLogado) {
         return ResponseEntity.ok(pacienteService.listarPacientes(usuarioLogado));
     }
 
-    /**
-     * Buscar paciente por ID
-     */
     @GetMapping("/{id}")
     public ResponseEntity<Paciente> buscarPaciente(@PathVariable Long id,
                                                    @AuthenticationPrincipal Usuario usuarioLogado) {
         return ResponseEntity.ok(pacienteService.buscarPorId(id, usuarioLogado));
     }
 
-    /**
-     * Cadastrar paciente
-     * Apenas ADMIN ou MEDICO
-     */
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN','MEDICO')")
     public ResponseEntity<Paciente> cadastrarPaciente(@RequestBody Paciente paciente,
@@ -49,10 +37,6 @@ public class PacienteController {
         return ResponseEntity.ok(pacienteService.cadastrarPaciente(paciente, usuarioLogado));
     }
 
-    /**
-     * Atualizar paciente
-     * Apenas ADMIN ou MEDICO
-     */
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','MEDICO')")
     public ResponseEntity<Paciente> atualizarPaciente(
@@ -64,10 +48,6 @@ public class PacienteController {
         return ResponseEntity.ok(pacienteAtualizado);
     }
 
-    /**
-     * Deletar paciente
-     * Apenas ADMIN
-     */
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deletarPaciente(

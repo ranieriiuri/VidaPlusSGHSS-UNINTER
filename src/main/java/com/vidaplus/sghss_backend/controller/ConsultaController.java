@@ -14,6 +14,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
@@ -59,6 +60,25 @@ public class ConsultaController {
 
         Consulta consultaAtualizada = consultaService.atualizarConsulta(id, request, usuarioLogado);
         return ResponseEntity.ok(consultaAtualizada);
+    }
+
+    @GetMapping("/{id}/valor")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<BigDecimal> obterValorConsulta(
+            @PathVariable Long id,
+            @AuthenticationPrincipal Usuario usuarioLogado) {
+
+        BigDecimal valor = consultaService.obterValorConsulta(id, usuarioLogado);
+        return ResponseEntity.ok(valor);
+    }
+
+    @GetMapping("/total-valores")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<BigDecimal> obterTotalConsultas(
+            @AuthenticationPrincipal Usuario usuarioLogado) {
+
+        BigDecimal total = consultaService.obterTotalConsultas(usuarioLogado);
+        return ResponseEntity.ok(total);
     }
 
     // Deletar consulta (apenas ADMIN)

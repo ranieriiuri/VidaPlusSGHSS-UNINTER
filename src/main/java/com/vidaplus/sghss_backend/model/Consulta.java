@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.vidaplus.sghss_backend.model.enums.StatusConsulta;
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
@@ -42,4 +44,7 @@ public class Consulta {
     @OneToOne(mappedBy = "consulta")
     @JsonManagedReference(value = "consulta-agendaSlot")
     private AgendaMedicaSlot agendaSlot;
+
+    @Column(nullable = false)
+    private BigDecimal valor;
 }

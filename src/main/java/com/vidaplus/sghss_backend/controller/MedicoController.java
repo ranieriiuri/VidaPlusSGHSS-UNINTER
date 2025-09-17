@@ -20,10 +20,6 @@ public class MedicoController {
 
     private final MedicoService medicoService;
 
-    /**
-     * Listar todos os médicos
-     * ADMIN e MEDICO podem listar; PACIENTE não
-     */
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','MEDICO')")
     public ResponseEntity<List<MedicoRespostaDTO>> listarMedicos(@AuthenticationPrincipal Usuario usuarioLogado) {
@@ -31,10 +27,6 @@ public class MedicoController {
         return ResponseEntity.ok(medicos);
     }
 
-    /**
-     * Buscar médico por ID
-     * ADMIN pode qualquer médico; MEDICO só pode o próprio; PACIENTE não
-     */
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','MEDICO')")
     public ResponseEntity<MedicoDTO> buscarMedico(@PathVariable Long id,
@@ -43,12 +35,6 @@ public class MedicoController {
         return ResponseEntity.ok(medico);
     }
 
-
-    /**
-     * Criar médico
-     * Apenas ADMIN
-     * O JSON enviado deve conter usuario.id válido (não paciente e não vinculado a outro médico)
-     */
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Medico> criarMedico(@RequestBody Medico medico,
@@ -57,12 +43,6 @@ public class MedicoController {
         return ResponseEntity.ok(novoMedico);
     }
 
-    /**
-     * Atualizar médico
-     * ADMIN pode atualizar qualquer médico
-     * MEDICO só pode atualizar seus próprios dados
-     * Não é possível alterar o usuário associado
-     */
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','MEDICO')")
     public ResponseEntity<Medico> atualizarMedico(@PathVariable Long id,
@@ -72,11 +52,6 @@ public class MedicoController {
         return ResponseEntity.ok(medico);
     }
 
-    /**
-     * Deletar médico
-     * Apenas ADMIN
-     * Desvincula o usuário antes de deletar para evitar erro de TransientObjectException
-     */
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deletarMedico(@PathVariable Long id,

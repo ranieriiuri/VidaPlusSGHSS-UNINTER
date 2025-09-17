@@ -25,9 +25,6 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
 
-    /**
-     * Registro público - cria conta como PACIENTE
-     */
     @PostMapping("/register")
     @Operation(
             summary = "Registro de usuário",
@@ -44,9 +41,6 @@ public class AuthController {
         return ResponseEntity.ok(new UsuarioDTO(criado.getId(), criado.getEmail(), criado.getPerfil()));
     }
 
-    /**
-     * Login de usuário
-     */
     @PostMapping("/login")
     @Operation(
             summary = "Login de usuário",
@@ -68,9 +62,6 @@ public class AuthController {
         }
     }
 
-    /**
-     * Exemplo de endpoint protegido
-     */
     @GetMapping("/me")
     @Operation(
             summary = "Usuário logado",
@@ -82,7 +73,7 @@ public class AuthController {
         return ResponseEntity.ok(new UsuarioDTO(usuario.getId(), usuario.getEmail(), usuario.getPerfil()));
     }
 
-    // DTOs
+    // DTOs internos
     public record RegistroRequest(String email, String senha) {}
     public record LoginRequest(String email, String senha) {}
     public record JwtResponse(String token, UsuarioDTO usuario) {}

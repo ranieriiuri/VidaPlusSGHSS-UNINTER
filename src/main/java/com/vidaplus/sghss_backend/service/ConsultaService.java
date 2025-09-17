@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Service
@@ -59,7 +60,7 @@ public class ConsultaService {
 
             // Faz o vínculo bidirecional
             slot.setConsulta(consulta);
-            slot.setDisponivel(false); // 🔑 marca slot como indisponível
+            slot.setDisponivel(false); // marca slot como indisponível
             consulta.setAgendaSlot(slot);
         }
 
@@ -100,9 +101,6 @@ public class ConsultaService {
         return consultaRepository.findAll();
     }
 
-    /**
-     * Buscar consulta por ID
-     */
     public ConsultaDTO buscarPorId(Long id, Usuario usuarioLogado) {
         Consulta consulta = consultaRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Consulta não encontrada."));
@@ -127,10 +125,6 @@ public class ConsultaService {
         return ConsultaDTO.from(consulta);
     }
 
-    /**
-     * Atualizar consulta
-     * Apenas ADMIN pode alterar
-     */
     public Consulta atualizarConsulta(Long id, AtualizarConsultaRequest request, Usuario usuarioLogado) {
         if (usuarioLogado.getPerfil() != PerfilUsuario.ADMIN) {
             throw new AccessDeniedException("Apenas administradores podem atualizar consultas.");
@@ -173,10 +167,53 @@ public class ConsultaService {
         return salvo;
     }
 
-    /**
-     * Deletar consulta
-     * Apenas ADMIN
-     */
+    public BigDecimal obterValorConsulta(Long id, Usuario usuarioLogado) {
+        if (usuarioLogado.getPerfil() != PerfilUsuario.ADMIN) {
+            throw new AccessDeniedException("Apenas administradores podem acessar os valores das consultas.");
+        }
+
+        Consulta consulta = consultaRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Consulta não encontrada."));
+
+        auditLogService.registrarAcao(
+                usuarioLogado.getId(),
+                usuarioLogado.getEmail(),
+                usuarioLogado.getPerfil().name(),
+                "CONSULTAR_VALOR",
+                "Consulta",
+                consulta.getId(),
+                "Paciente: " + consulta.getPaciente().getNome() +
+                        ", Médico: " + consulta.getMedico().getNome() +
+                        ", Valor: " + consulta.getValor()
+        );
+
+        return consulta.getValor();
+    }
+
+    public BigDecimal obterTotalConsultas(Usuario usuarioLogado) {
+        if (usuarioLogado.getPerfil() != PerfilUsuario.ADMIN) {
+            throw new AccessDeniedException("Apenas administradores podem acessar o total das consultas.");
+        }
+
+        BigDecimal total = consultaRepository.findAll()
+                .stream()
+                .map(Consulta::getValor)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // Registrar auditoria
+        auditLogService.registrarAcao(
+                usuarioLogado.getId(),
+                usuarioLogado.getEmail(),
+                usuarioLogado.getPerfil().name(),
+                "CONSULTAR_TOTAL_VALORES",
+                "Consulta",
+                null, // sem ID específico
+                "Total acumulado das consultas: " + total
+        );
+
+        return total;
+    }
+
     public void deletarConsulta(Long id, Usuario usuarioLogado) {
         if (usuarioLogado.getPerfil() != PerfilUsuario.ADMIN) {
             throw new AccessDeniedException("Apenas administradores podem deletar consultas.");

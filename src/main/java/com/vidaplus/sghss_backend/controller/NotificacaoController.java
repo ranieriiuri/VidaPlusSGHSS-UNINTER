@@ -24,7 +24,6 @@ public class NotificacaoController {
     private final PacienteService pacienteService;
     private final NotificacaoService notificacaoService;
 
-    /** Listar todas as notificações do paciente logado */
     @GetMapping
     public ResponseEntity<List<NotificacaoDTO>> listarNotificacoes(
             @AuthenticationPrincipal Usuario usuarioLogado
@@ -48,7 +47,6 @@ public class NotificacaoController {
         return ResponseEntity.ok(notificacoes);
     }
 
-    /** Listar notificações não lidas do paciente logado */
     @GetMapping("/nao-lidas")
     public ResponseEntity<List<NotificacaoDTO>> listarNaoLidas(
             @AuthenticationPrincipal Usuario usuarioLogado
@@ -62,7 +60,6 @@ public class NotificacaoController {
         return ResponseEntity.ok(notificacoes);
     }
 
-    /** Marcar uma notificação como lida */
     @PostMapping("/{id}/marcar-como-lida")
     public ResponseEntity<Void> marcarComoLida(
             @PathVariable Long id,
@@ -72,7 +69,6 @@ public class NotificacaoController {
         return ResponseEntity.ok().build();
     }
 
-    /** Enviar notificação para paciente (ADMIN ou MÉDICO) */
     @PostMapping("/enviar/{pacienteId}")
     public ResponseEntity<NotificacaoDTO> enviarNotificacao(
             @PathVariable Long pacienteId,
@@ -95,7 +91,6 @@ public class NotificacaoController {
         return ResponseEntity.ok(NotificacaoDTO.from(notificacao));
     }
 
-    /** Buscar notificação por ID */
     @GetMapping("/{id}")
     public ResponseEntity<NotificacaoDTO> buscarPorId(@PathVariable Long id) {
         Notificacao notificacao = notificacaoService.buscarPorId(id);
