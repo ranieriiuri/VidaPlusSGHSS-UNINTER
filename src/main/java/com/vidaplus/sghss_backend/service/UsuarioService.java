@@ -116,12 +116,15 @@ public class UsuarioService implements UserDetailsService {
         return atualizado;
     }
 
-    public void deletarUsuario(String email, Usuario usuarioLogado) {
+    public void deletarUsuario(Long id, Usuario usuarioLogado) {
+
         if (!PerfilUsuario.ADMIN.equals(usuarioLogado.getPerfil())) {
             throw new SecurityException("Apenas administradores podem deletar usuários.");
         }
 
-        Usuario usuarioExistente = buscarPorEmail(email);
+        Usuario usuarioExistente = usuarioRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado com id: " + id));
+
         usuarioRepository.delete(usuarioExistente);
 
         auditLogService.registrarAcao(

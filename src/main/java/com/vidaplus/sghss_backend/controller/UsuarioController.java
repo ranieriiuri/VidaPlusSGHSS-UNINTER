@@ -55,11 +55,13 @@ public class UsuarioController {
     }
 
     // Deletar usuário (ADMIN)
-    @DeleteMapping("/{email}")
+    @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> deletarUsuario(@PathVariable String email,
-                                               @AuthenticationPrincipal Usuario usuarioLogado) {
-        usuarioService.deletarUsuario(email, usuarioLogado);
+    public ResponseEntity<Void> deletarUsuario(
+            @PathVariable Long id,
+            @AuthenticationPrincipal Usuario usuarioLogado) {
+
+        usuarioService.deletarUsuario(id, usuarioLogado);
         return ResponseEntity.noContent().build();
     }
 
