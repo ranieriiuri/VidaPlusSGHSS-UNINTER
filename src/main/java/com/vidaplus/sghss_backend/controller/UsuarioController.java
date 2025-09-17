@@ -1,5 +1,6 @@
 package com.vidaplus.sghss_backend.controller;
 
+import com.vidaplus.sghss_backend.dto.UsuarioRequest;
 import com.vidaplus.sghss_backend.model.Usuario;
 import com.vidaplus.sghss_backend.model.enums.PerfilUsuario;
 import com.vidaplus.sghss_backend.service.UsuarioService;
@@ -7,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,18 +22,23 @@ public class UsuarioController {
 
     // Criar usuário (ADMIN ou MEDICO)
     @PostMapping
-    public ResponseEntity<UsuarioDTO> criarUsuario(@RequestBody Usuario usuario,
-                                                   @AuthenticationPrincipal Usuario usuarioLogado) {
-        Usuario novoUsuario = usuarioService.criarUsuario(usuario, usuarioLogado);
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UsuarioDTO> criarUsuario(
+            @RequestBody UsuarioRequest request,
+            @AuthenticationPrincipal Usuario usuarioLogado) {
+
+        Usuario novoUsuario = usuarioService.criarUsuario(request, usuarioLogado);
+
         return ResponseEntity.ok(new UsuarioDTO(
                 novoUsuario.getId(),
                 novoUsuario.getEmail(),
-                novoUsuario.getPerfil().name()  // Converte enum para String
+                novoUsuario.getPerfil().name()
         ));
     }
 
     // Atualizar usuário
     @PutMapping("/{email}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UsuarioDTO> atualizarUsuario(@PathVariable String email,
                                                        @RequestBody Usuario usuarioAtualizado,
                                                        @AuthenticationPrincipal Usuario usuarioLogado) {

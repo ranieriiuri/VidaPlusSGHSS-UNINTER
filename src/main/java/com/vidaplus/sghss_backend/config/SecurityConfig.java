@@ -22,10 +22,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    private final UsuarioRepository usuarioRepository;
+    private final UsuarioRepository usuarioRepository; // apenas o repo
 
-    // Apenas um UserDetailsService ativo, marcado como @Primary
     @Bean
     @Primary
     public UserDetailsService userDetailsService() {
@@ -38,7 +36,6 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-    // AuthenticationManager usando nosso UserDetailsService
     @Bean
     public AuthenticationManager authenticationManager(HttpSecurity http) throws Exception {
         return http.getSharedObject(AuthenticationManagerBuilder.class)
@@ -48,9 +45,8 @@ public class SecurityConfig {
                 .build();
     }
 
-    // Configuração HTTP + JWT
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

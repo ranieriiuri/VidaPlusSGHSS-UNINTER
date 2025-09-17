@@ -27,6 +27,6 @@ public class Notificacao {
 
     @ManyToOne
     @JoinColumn(name = "paciente_id")
-    @JsonBackReference
+    @JsonBackReference(value = "paciente-notificacoes")
     private Paciente paciente;
 }

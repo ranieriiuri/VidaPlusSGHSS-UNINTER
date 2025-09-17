@@ -1,5 +1,6 @@
 package com.vidaplus.sghss_backend.service;
 
+import com.vidaplus.sghss_backend.dto.UsuarioRequest;
 import com.vidaplus.sghss_backend.model.Usuario;
 import com.vidaplus.sghss_backend.model.enums.PerfilUsuario;
 import com.vidaplus.sghss_backend.repository.UsuarioRepository;
@@ -7,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -17,33 +19,28 @@ public class UsuarioService implements UserDetailsService {
 
     private final UsuarioRepository usuarioRepository;
     private final AuditLogService auditLogService; // ← audit logs
+    private final PasswordEncoder passwordEncoder;
 
-    @Override
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        return usuarioRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado com email: " + email));
-    }
+    public Usuario criarUsuario(UsuarioRequest request, Usuario usuarioLogado) {
 
-    public Usuario buscarPorEmail(String email) {
-        return usuarioRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado com email: " + email));
-    }
-
-    public List<Usuario> listarTodosUsuarios() {
-        return usuarioRepository.findAll();
-    }
-
-    public Usuario criarUsuario(Usuario usuario, Usuario usuarioLogado) {
-        usuarioRepository.findByEmail(usuario.getEmail())
+        // Verifica se email já existe
+        usuarioRepository.findByEmail(request.getEmail())
                 .ifPresent(u -> { throw new IllegalArgumentException("Email já cadastrado."); });
 
         // Regras de perfil
-        if (PerfilUsuario.MEDICO.equals(usuarioLogado.getPerfil()) && !PerfilUsuario.PACIENTE.equals(usuario.getPerfil())) {
+        if (PerfilUsuario.MEDICO.equals(usuarioLogado.getPerfil()) && !PerfilUsuario.PACIENTE.equals(PerfilUsuario.valueOf(request.getPerfil().name()))) {
             throw new SecurityException("Médicos só podem criar usuários com perfil PACIENTE.");
         }
         if (PerfilUsuario.PACIENTE.equals(usuarioLogado.getPerfil())) {
             throw new SecurityException("Pacientes não podem criar usuários.");
         }
+
+        // Cria usuário
+        Usuario usuario = Usuario.builder()
+                .email(request.getEmail())
+                .senhaHash(passwordEncoder.encode(request.getSenha()))
+                .perfil(PerfilUsuario.valueOf(request.getPerfil().name()))
+                .build();
 
         Usuario usuarioSalvo = usuarioRepository.save(usuario);
 
@@ -59,6 +56,21 @@ public class UsuarioService implements UserDetailsService {
         );
 
         return usuarioSalvo;
+    }
+
+    @Override
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        return usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado com email: " + email));
+    }
+
+    public Usuario buscarPorEmail(String email) {
+        return usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado com email: " + email));
+    }
+
+    public List<Usuario> listarTodosUsuarios() {
+        return usuarioRepository.findAll();
     }
 
     public Usuario criarUsuarioPublico(Usuario usuario) {

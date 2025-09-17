@@ -24,11 +24,11 @@ public class Prontuario {
     // Relacionamento N:1 com Paciente
     @ManyToOne
     @JoinColumn(name = "paciente_id", nullable = false)
-    @JsonBackReference
+    @JsonBackReference(value = "paciente-prontuarios")
     private Paciente paciente;
 
     @ManyToOne
     @JoinColumn(name = "medico_id", nullable = false)
-    @JsonBackReference
+    @JsonBackReference(value = "medico-prontuarios")
     private Medico medico;
 }

@@ -31,11 +31,11 @@ public class AgendaMedicaSlot {
 
     @ManyToOne
     @JoinColumn(name = "medico_id", nullable = false)
-    @JsonBackReference
+    @JsonBackReference(value = "medico-agendaSlots")
     private Medico medico;
 
     @OneToOne
     @JoinColumn(name = "consulta_id")
-    @JsonBackReference
+    @JsonBackReference(value = "consulta-agendaSlot")
     private Consulta consulta; // vincula o slot a uma consulta quando agendada
 }

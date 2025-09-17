@@ -36,22 +36,22 @@ public class Paciente {
     // Relacionamento 1:1 com Usuario
     @OneToOne
     @JoinColumn(name = "usuario_id", unique = true)
-    @JsonBackReference
+    @JsonBackReference(value = "usuario-paciente")
     private Usuario usuario;
 
     // Relacionamento 1:N com Consulta
     @OneToMany(mappedBy = "paciente")
-    @JsonManagedReference
+    @JsonManagedReference(value = "paciente-consultas")
     private List<Consulta> consultas;
 
     // Relacionamento 1:N com Prontuario
     @OneToMany(mappedBy = "paciente", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonManagedReference
+    @JsonManagedReference(value = "paciente-prontuarios")
     private List<Prontuario> prontuarios = new ArrayList<>();
 
     // Relacionamento 1:N com Notificacao
     @OneToMany(mappedBy = "paciente", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonManagedReference
+    @JsonManagedReference(value = "paciente-notificacoes")
     private List<Notificacao> notificacoes = new ArrayList<>();
 
     @Column(name = "teleconsulta_info")

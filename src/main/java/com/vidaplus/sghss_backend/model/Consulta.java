@@ -31,15 +31,15 @@ public class Consulta {
 
     @ManyToOne
     @JoinColumn(name = "paciente_id", nullable = false)
-    @JsonBackReference
+    @JsonBackReference(value = "paciente-consultas")
     private Paciente paciente;
 
     @ManyToOne
     @JoinColumn(name = "medico_id", nullable = false)
-    @JsonBackReference
+    @JsonBackReference(value = "medico-consultas")
     private Medico medico;
 
     @OneToOne(mappedBy = "consulta")
-    @JsonManagedReference
+    @JsonManagedReference(value = "consulta-agendaSlot")
     private AgendaMedicaSlot agendaSlot;
 }

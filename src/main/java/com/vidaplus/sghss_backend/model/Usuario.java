@@ -35,13 +35,12 @@ public class Usuario implements UserDetails {
     @Column(nullable = false, length = 20)
     private PerfilUsuario perfil;
 
-    // Relacionamentos 1:1
     @OneToOne(mappedBy = "usuario")
-    @JsonManagedReference
+    @JsonManagedReference(value = "usuario-paciente")
     private Paciente paciente;
 
     @OneToOne(mappedBy = "usuario")
-    @JsonManagedReference
+    @JsonManagedReference(value = "usuario-medico")
     private Medico medico;
 
     // UserDetails
