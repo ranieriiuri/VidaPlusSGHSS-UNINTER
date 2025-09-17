@@ -1,5 +1,6 @@
 package com.vidaplus.sghss_backend.service;
 
+import com.vidaplus.sghss_backend.dto.AtualizarUsuarioRequest;
 import com.vidaplus.sghss_backend.dto.UsuarioRequest;
 import com.vidaplus.sghss_backend.model.Usuario;
 import com.vidaplus.sghss_backend.model.enums.PerfilUsuario;
@@ -81,34 +82,38 @@ public class UsuarioService implements UserDetailsService {
         return usuarioRepository.save(usuario);
     }
 
-    public Usuario atualizarUsuario(Usuario usuarioAtualizado, Usuario usuarioLogado) {
-        Usuario usuarioExistente = buscarPorEmail(usuarioAtualizado.getEmail());
+    public Usuario atualizarUsuario(Long id, AtualizarUsuarioRequest request, Usuario usuarioLogado) {
 
-        if (PerfilUsuario.MEDICO.equals(usuarioLogado.getPerfil()) && !PerfilUsuario.PACIENTE.equals(usuarioExistente.getPerfil())) {
-            throw new SecurityException("Médicos só podem atualizar usuários com perfil PACIENTE.");
+        Usuario usuarioExistente = usuarioRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado com id: " + id));
+
+        // Regras de perfil
+        if (PerfilUsuario.PACIENTE.equals(usuarioLogado.getPerfil())) {
+            throw new SecurityException("Pacientes não podem atualizar usuários.");
+        }
+        if (PerfilUsuario.MEDICO.equals(usuarioLogado.getPerfil()) &&
+                !PerfilUsuario.PACIENTE.equals(PerfilUsuario.valueOf(request.getPerfil()))) {
+            throw new SecurityException("Médicos só podem atualizar usuários PACIENTE.");
         }
 
-        if (PerfilUsuario.PACIENTE.equals(usuarioLogado.getPerfil()) &&
-                !usuarioLogado.getEmail().equals(usuarioExistente.getEmail())) {
-            throw new SecurityException("Pacientes só podem atualizar seus próprios dados.");
-        }
+        // Atualiza campos permitidos
+        usuarioExistente.setEmail(request.getEmail());
+        usuarioExistente.setPerfil(PerfilUsuario.valueOf(request.getPerfil()));
 
-        usuarioExistente.setSenhaHash(usuarioAtualizado.getSenhaHash());
-        usuarioExistente.setPerfil(usuarioAtualizado.getPerfil());
+        Usuario atualizado = usuarioRepository.save(usuarioExistente);
 
-        Usuario usuarioSalvo = usuarioRepository.save(usuarioExistente);
-
+        // Registrar log
         auditLogService.registrarAcao(
                 usuarioLogado.getId(),
                 usuarioLogado.getEmail(),
                 usuarioLogado.getPerfil().name(),
                 "ATUALIZAR_USUARIO",
                 "Usuario",
-                usuarioSalvo.getId(),
-                "Email: " + usuarioSalvo.getEmail() + ", Perfil: " + usuarioSalvo.getPerfil()
+                atualizado.getId(),
+                "Email: " + atualizado.getEmail() + ", Perfil: " + atualizado.getPerfil()
         );
 
-        return usuarioSalvo;
+        return atualizado;
     }
 
     public void deletarUsuario(String email, Usuario usuarioLogado) {

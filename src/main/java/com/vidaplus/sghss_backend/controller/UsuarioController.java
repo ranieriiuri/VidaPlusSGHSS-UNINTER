@@ -1,5 +1,6 @@
 package com.vidaplus.sghss_backend.controller;
 
+import com.vidaplus.sghss_backend.dto.AtualizarUsuarioRequest;
 import com.vidaplus.sghss_backend.dto.UsuarioRequest;
 import com.vidaplus.sghss_backend.model.Usuario;
 import com.vidaplus.sghss_backend.model.enums.PerfilUsuario;
@@ -37,13 +38,15 @@ public class UsuarioController {
     }
 
     // Atualizar usuário
-    @PutMapping("/{email}")
+    @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<UsuarioDTO> atualizarUsuario(@PathVariable String email,
-                                                       @RequestBody Usuario usuarioAtualizado,
-                                                       @AuthenticationPrincipal Usuario usuarioLogado) {
-        usuarioAtualizado.setEmail(email);
-        Usuario atualizado = usuarioService.atualizarUsuario(usuarioAtualizado, usuarioLogado);
+    public ResponseEntity<UsuarioDTO> atualizarUsuario(
+            @PathVariable Long id,
+            @RequestBody AtualizarUsuarioRequest request,
+            @AuthenticationPrincipal Usuario usuarioLogado) {
+
+        Usuario atualizado = usuarioService.atualizarUsuario(id, request, usuarioLogado);
+
         return ResponseEntity.ok(new UsuarioDTO(
                 atualizado.getId(),
                 atualizado.getEmail(),
