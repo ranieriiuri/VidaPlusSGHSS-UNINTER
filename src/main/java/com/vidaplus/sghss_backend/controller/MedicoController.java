@@ -1,6 +1,7 @@
 package com.vidaplus.sghss_backend.controller;
 
 import com.vidaplus.sghss_backend.dto.MedicoDTO;
+import com.vidaplus.sghss_backend.dto.MedicoRespostaDTO;
 import com.vidaplus.sghss_backend.model.Medico;
 import com.vidaplus.sghss_backend.model.Usuario;
 import com.vidaplus.sghss_backend.service.MedicoService;
@@ -24,8 +25,9 @@ public class MedicoController {
      * ADMIN e MEDICO podem listar; PACIENTE não
      */
     @GetMapping
-    public ResponseEntity<List<MedicoDTO>> listarMedicos(@AuthenticationPrincipal Usuario usuarioLogado) {
-        List<MedicoDTO> medicos = medicoService.listarMedicos(usuarioLogado);
+    @PreAuthorize("hasAnyRole('ADMIN','MEDICO')")
+    public ResponseEntity<List<MedicoRespostaDTO>> listarMedicos(@AuthenticationPrincipal Usuario usuarioLogado) {
+        List<MedicoRespostaDTO> medicos = medicoService.listarMedicos(usuarioLogado);
         return ResponseEntity.ok(medicos);
     }
 
@@ -34,6 +36,7 @@ public class MedicoController {
      * ADMIN pode qualquer médico; MEDICO só pode o próprio; PACIENTE não
      */
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','MEDICO')")
     public ResponseEntity<MedicoDTO> buscarMedico(@PathVariable Long id,
                                                   @AuthenticationPrincipal Usuario usuarioLogado) {
         MedicoDTO medico = medicoService.buscarPorId(id, usuarioLogado);

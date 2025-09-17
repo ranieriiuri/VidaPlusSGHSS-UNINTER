@@ -1,6 +1,6 @@
 package com.vidaplus.sghss_backend.service;
 
-import com.vidaplus.sghss_backend.dto.MedicoDTO;
+import com.vidaplus.sghss_backend.dto.*;
 import com.vidaplus.sghss_backend.model.Medico;
 import com.vidaplus.sghss_backend.model.Usuario;
 import com.vidaplus.sghss_backend.model.enums.PerfilUsuario;
@@ -13,6 +13,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -69,22 +70,49 @@ public class MedicoService {
         return salvo;
     }
 
-    public List<MedicoDTO> listarMedicos(Usuario usuarioLogado) {
+    public List<MedicoRespostaDTO> listarMedicos(Usuario usuarioLogado) {
         if (usuarioLogado.getPerfil() == PerfilUsuario.PACIENTE) {
             throw new AccessDeniedException("Pacientes não podem listar médicos.");
         }
 
         return medicoRepository.findAll()
                 .stream()
-                .map(medico -> MedicoDTO.builder()
+                .map(medico -> MedicoRespostaDTO.builder()
                         .id(medico.getId())
                         .nome(medico.getNome())
                         .crm(medico.getCrm())
                         .especialidade(medico.getEspecialidade())
                         .usuarioId(medico.getUsuario() != null ? medico.getUsuario().getId() : null)
+                        .agendaSlots(
+                                medico.getAgendaSlots().stream()
+                                        .map(slot -> AgendaMedicaSlotDTO.builder()
+                                                .id(slot.getId())
+                                                .data(slot.getData())
+                                                .hora(slot.getHora())
+                                                .disponivel(slot.isDisponivel())
+                                                .build())
+                                        .collect(Collectors.toList()) // <- aqui
+                        )
+                        .consultas(
+                                medico.getConsultas().stream()
+                                        .map(consulta -> ConsultaDTO.builder()
+                                                .id(consulta.getId())
+                                                .data(consulta.getData().toString())
+                                                .hora(consulta.getHora().toString())
+                                                .status(consulta.getStatus().name())
+                                                .paciente(consulta.getPaciente() != null
+                                                        ? new PacienteDTO(
+                                                        consulta.getPaciente().getId(),
+                                                        consulta.getPaciente().getNome(),
+                                                        consulta.getPaciente().getCpf())
+                                                        : null)
+                                                .build())
+                                        .collect(Collectors.toList()) // <- e aqui
+                        )
                         .build())
-                .toList();
+                .collect(Collectors.toList()); // <- e aqui
     }
+
 
     public List<Medico> listarEntidadesMedicos(Usuario usuarioLogado) {
         if (usuarioLogado.getPerfil() != PerfilUsuario.ADMIN) {
