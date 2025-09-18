@@ -70,25 +70,15 @@ public class RelatorioController {
                 .body(pdf);
     }
 
-    //Esse busca relatorio salvo anteriormente no banco, gera o pdf e disponibiliza
-    /* POR ENQUANTO, CONGELADO!
-
-    @GetMapping("/{id}/pdf")
-    public ResponseEntity<byte[]> baixarRelatorioPdfPorId(@PathVariable Long id, @AuthenticationPrincipal Usuario usuarioLogado) {
-        Relatorio relatorio = relatorioService.buscarPorId(id, usuarioLogado);
-        RelatorioCompletoDTO dto;
-        try {
-            dto = objectMapper.readValue(relatorio.getConteudoJson(), RelatorioCompletoDTO.class);
-        } catch (Exception e) {
-            throw new RuntimeException("Erro ao ler JSON do relatório", e);
-        }
-
-        byte[] pdf = relatorioService.gerarPdfRelatorioCompleto(dto);
-
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"relatorio.pdf\"")
-                .contentType(MediaType.APPLICATION_PDF)
-                .body(pdf);
+    @GetMapping("/consultas")
+    public Relatorio relatorioConsultas(@AuthenticationPrincipal Usuario usuarioLogado) {
+        return relatorioService.gerarRelatorioConsultas(usuarioLogado);
     }
-     */
+
+    @GetMapping("/consultas/medico/{medicoId}")
+    public Relatorio relatorioConsultasPorMedico(
+            @PathVariable Long medicoId,
+            @AuthenticationPrincipal Usuario usuarioLogado) {
+        return relatorioService.gerarRelatorioConsultasPorMedico(medicoId, usuarioLogado);
+    }
 }

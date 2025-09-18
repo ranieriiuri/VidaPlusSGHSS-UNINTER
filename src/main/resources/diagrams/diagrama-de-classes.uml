@@ -1,0 +1,164 @@
+@startuml
+'--- Classes principais ---
+class Usuario {
+    - id: Long
+    - email: String
+    - senha: String
+    - perfil: PerfilUsuario
+    - paciente: Paciente
+    - medico: Medico
+    + criarUsuario()
+    + atualizarUsuario()
+    + listarUsuarios()
+    + deletarUsuario()
+}
+
+class Paciente {
+    - id: Long
+    - nome: String
+    - cpf: String
+    - dataNascimento: LocalDate
+    - endereco: String
+    - telefone: String
+    - usuario: Usuario
+    - consultas: List<Consulta>
+    - prontuarios: List<Prontuario>
+    - notificacoes: List<Notificacao>
+    - teleconsultaInfo: String
+    + listarPacientes()
+    + buscarPaciente()
+    + cadastrarPaciente()
+    + atualizarPaciente()
+    + deletarPaciente()
+}
+
+class Medico {
+    - id: Long
+    - nome: String
+    - crm: String
+    - especialidade: String
+    - agendaMedica: List<AgendaMedicaSlot>
+    - usuario: Usuario
+    - consultas: List<Consulta>
+    - prontuarios: List<Prontuario>
+    + listarMedicos()
+    + buscarMedico()
+    + criarMedico()
+    + atualizarMedico()
+    + deletarMedico()
+}
+
+class Consulta {
+    - id: Long
+    - data: LocalDate
+    - hora: LocalTime
+    - status: StatusConsulta
+    - paciente: Paciente
+    - medico: Medico
+    - agendaSlot: AgendaMedicaSlot
+    - valor: BigDecimal
+    + listarConsultas()
+    + buscarConsultas()
+    + criarConsulta()
+    + atualizarConsulta()
+    + obterValorConsulta()
+    + obterTotalConsultas()
+    + deletarConsulta()
+}
+
+class Prontuario {
+    - id: Long
+    - registros: String
+    - prescricoes: String
+    - paciente: Paciente
+    - medico: Medico
+    + listarProntuarios()
+    + buscarProntuario()
+    + criarProntuario()
+    + atualizarProntuario()
+    + deletarProntuario()
+}
+
+class AgendaMedicaSlot {
+    - id: Long
+    - data: LocalDate
+    - hora: LocalTime
+    - disponivel: Boolean
+    - medico: Medico
+    - consulta: Consulta
+    + listarSlotsPorMedico()
+    + listarSlotsDisponiveis()
+    + criarSlot()
+    + vincularConsulta()
+    + setDisponivel()
+    + buscarPorId()
+    + listarTodosOsSlots()
+}
+
+class Notificacao {
+    - id: Long
+    - mensagem: String
+    - tipo: TipoNotificacao
+    - dataCriacao: LocalDateTime
+    - lida: Boolean
+    - paciente: Paciente
+    + listarNotificacoes()
+    + listarTodasNotificacoes()
+    + listarNaoLidas()
+    + marcarComoLida()
+    + enviarNotificacao()
+    + buscarPorId()
+}
+
+class Relatorio {
+    - id: Long
+    - nome: String
+    - conteudoJson: String
+    - dataGeracao: LocalDateTime
+    - geradoPorId: Long
+    - geradoPorEmail: String
+    - geradoPorPerfil: PerfilUsuario
+    + gerarRelatorioCompleto()
+    + listarRelatorios()
+    + buscarRelatorioPorId()
+    + baixarPdfRelatorioCompleto()
+}
+
+class AuditLog {
+    - id: Long
+    - usuarioId: Long
+    - usuarioNome: String
+    - perfil: PerfilUsuario
+    - acao: String
+    - entidade: String
+    - entidadeId: Long
+    - dataHora: LocalDateTime
+    - detalhes: String
+    + listarTodos()
+    + porUsuario()
+}
+
+class Hospital {
+    - id: Long
+    - nome: String
+    - cnpj: String
+    - endereco: String
+    - telefone: String
+    - email: String
+    + salvar()
+    + listarTodos()
+    + buscarPorId()
+    + deletar()
+}
+
+'--- Relacionamentos ---
+Usuario "1" -- "0..1" Paciente
+Usuario "1" -- "0..1" Medico
+Paciente "1" -- "0..*" Consulta
+Medico "1" -- "0..*" Consulta
+Paciente "1" -- "0..*" Prontuario
+Medico "1" -- "0..*" Prontuario
+Paciente "1" -- "0..*" Notificacao
+Medico "1" -- "0..*" AgendaMedicaSlot
+AgendaMedicaSlot "1" -- "0..1" Consulta
+@enduml

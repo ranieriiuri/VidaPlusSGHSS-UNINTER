@@ -81,6 +81,15 @@ public class ConsultaController {
         return ResponseEntity.ok(total);
     }
 
+    @GetMapping("/total/medico/{id}")
+    public ResponseEntity<BigDecimal> obterTotalConsultasPorMedico(
+            @PathVariable Long id,
+            @AuthenticationPrincipal Usuario usuarioLogado
+    ) {
+        BigDecimal total = consultaService.obterTotalConsultasPorMedico(id, usuarioLogado);
+        return ResponseEntity.ok(total);
+    }
+
     // Deletar consulta (apenas ADMIN)
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")

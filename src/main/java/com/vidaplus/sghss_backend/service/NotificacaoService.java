@@ -20,7 +20,6 @@ public class NotificacaoService {
     private final NotificacaoRepository notificacaoRepository;
     private final AuditLogService auditLogService;
 
-    /** Enviar notificação para paciente */
     public Notificacao enviarNotificacao(Paciente paciente, String mensagem, String tipo, Usuario usuarioLogado) {
         Notificacao notificacao = Notificacao.builder()
                 .paciente(paciente)
@@ -47,25 +46,18 @@ public class NotificacaoService {
         return salvo; // retorna ENTIDADE
     }
 
-    /** Listar todas as notificações de um paciente */
     public List<Notificacao> listarNotificacoesPaciente(Paciente paciente) {
         return notificacaoRepository.findByPaciente(paciente);
     }
 
-    /**
-     * Listar todas as notificações do sistema
-     * Apenas ADMIN podem acessar (controle via controller)
-     */
     public List<Notificacao> listarTodasNotificacoes() {
         return notificacaoRepository.findAll();
     }
 
-    /** Listar notificações não lidas de um paciente */
     public List<Notificacao> listarNaoLidas(Paciente paciente) {
         return notificacaoRepository.findByPacienteAndLidaFalse(paciente);
     }
 
-    /** Marcar notificação como lida */
     public void marcarComoLida(Long notificacaoId, Usuario usuarioLogado) {
         Notificacao notificacao = notificacaoRepository.findById(notificacaoId)
                 .orElseThrow(() -> new EntityNotFoundException("Notificação não encontrada."));

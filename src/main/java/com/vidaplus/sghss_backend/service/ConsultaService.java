@@ -47,6 +47,7 @@ public class ConsultaService {
                 .status(StatusConsulta.AGENDADA) // 🔑 garante status inicial
                 .paciente(paciente)
                 .medico(medico)
+                .valor(request.getValor() != null ? request.getValor() : BigDecimal.ZERO) // 🔑 garante não-nulo
                 .build();
 
         // Se o request tiver um slot de agenda
@@ -73,7 +74,8 @@ public class ConsultaService {
                 "CRIAR_CONSULTA",
                 "Consulta",
                 salvo.getId(),
-                "Paciente: " + paciente.getNome() + ", Médico: " + medico.getNome()
+                "Paciente: " + paciente.getNome() + ", Médico: " + medico.getNome() +
+                        ", Valor: " + salvo.getValor()
         );
 
         return salvo;
@@ -188,6 +190,34 @@ public class ConsultaService {
         );
 
         return consulta.getValor();
+    }
+
+    public BigDecimal obterTotalConsultasPorMedico(Long medicoId, Usuario usuarioLogado) {
+        if (usuarioLogado.getPerfil() != PerfilUsuario.ADMIN) {
+            throw new AccessDeniedException("Apenas administradores podem acessar o total por médico.");
+        }
+
+        Medico medico = medicoRepository.findById(medicoId)
+                .orElseThrow(() -> new EntityNotFoundException("Médico não encontrado."));
+
+        BigDecimal total = consultaRepository.findAll()
+                .stream()
+                .filter(c -> c.getMedico() != null && c.getMedico().getId().equals(medicoId))
+                .map(Consulta::getValor)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // Registrar auditoria
+        auditLogService.registrarAcao(
+                usuarioLogado.getId(),
+                usuarioLogado.getEmail(),
+                usuarioLogado.getPerfil().name(),
+                "CONSULTAR_TOTAL_VALORES_POR_MEDICO",
+                "Consulta",
+                null,
+                "Total acumulado das consultas para Médico: " + medico.getNome() + " = " + total
+        );
+
+        return total;
     }
 
     public BigDecimal obterTotalConsultas(Usuario usuarioLogado) {

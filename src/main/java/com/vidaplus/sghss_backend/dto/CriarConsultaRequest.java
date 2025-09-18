@@ -3,6 +3,7 @@ package com.vidaplus.sghss_backend.dto;
 import com.vidaplus.sghss_backend.model.enums.StatusConsulta;
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
@@ -18,4 +19,5 @@ public class CriarConsultaRequest {
     private LocalDate data;    // opcional se usar slot
     private LocalTime hora;    // opcional se usar slot
     private StatusConsulta status;
+    private BigDecimal valor;
 }

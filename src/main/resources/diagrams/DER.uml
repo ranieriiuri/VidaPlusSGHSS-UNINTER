@@ -1,0 +1,112 @@
+@startuml
+!define Table(name,desc) class name as "desc" << (T,#FFAAAA) >>
+
+'--- Tabelas / Entidades ---
+Table(Usuario, "Usuario") {
+  + id : BIGINT <<PK>>
+  email : VARCHAR
+  senha : VARCHAR
+  perfil : VARCHAR
+}
+
+Table(Paciente, "Paciente") {
+  + id : BIGINT <<PK>>
+  nome : VARCHAR
+  cpf : VARCHAR
+  dataNascimento : DATE
+  endereco : VARCHAR
+  telefone : VARCHAR
+  usuario_id : BIGINT <<FK>>
+}
+
+Table(Medico, "Medico") {
+  + id : BIGINT <<PK>>
+  nome : VARCHAR
+  crm : VARCHAR
+  especialidade : VARCHAR
+  usuario_id : BIGINT <<FK>>
+}
+
+Table(Consulta, "Consulta") {
+  + id : BIGINT <<PK>>
+  data : DATE
+  hora : TIME
+  status : VARCHAR
+  valor : DECIMAL(10,2)
+  paciente_id : BIGINT <<FK>>
+  medico_id : BIGINT <<FK>>
+  agendaSlot_id : BIGINT <<FK>>
+}
+
+Table(Prontuario, "Prontuario") {
+  + id : BIGINT <<PK>>
+  registros : TEXT
+  prescricoes : TEXT
+  paciente_id : BIGINT <<FK>>
+  medico_id : BIGINT <<FK>>
+}
+
+Table(AgendaMedicaSlot, "AgendaMedicaSlot") {
+  + id : BIGINT <<PK>>
+  data : DATE
+  hora : TIME
+  disponivel : BOOLEAN
+  medico_id : BIGINT <<FK>>
+  consulta_id : BIGINT <<FK>>
+}
+
+Table(Notificacao, "Notificacao") {
+  + id : BIGINT <<PK>>
+  mensagem : TEXT
+  tipo : VARCHAR
+  dataCriacao : DATETIME
+  lida : BOOLEAN
+  paciente_id : BIGINT <<FK>>
+}
+
+Table(Relatorio, "Relatorio") {
+  + id : BIGINT <<PK>>
+  nome : VARCHAR
+  conteudoJson : TEXT
+  dataGeracao : DATETIME
+  geradoPorId : BIGINT
+  geradoPorEmail : VARCHAR
+  geradoPorPerfil : VARCHAR
+}
+
+Table(AuditLog, "AuditLog") {
+  + id : BIGINT <<PK>>
+  usuarioId : BIGINT
+  usuarioNome : VARCHAR
+  perfil : VARCHAR
+  acao : VARCHAR
+  entidade : VARCHAR
+  entidadeId : BIGINT
+  dataHora : DATETIME
+  detalhes : TEXT
+}
+
+Table(Hospital, "Hospital") {
+  + id : BIGINT <<PK>>
+  nome : VARCHAR
+  cnpj : VARCHAR
+  endereco : VARCHAR
+  telefone : VARCHAR
+  email : VARCHAR
+}
+
+'--- Relacionamentos ---
+Usuario "1" -- "0..1" Paciente : possui
+Usuario "1" -- "0..1" Medico : possui
+Paciente "1" -- "0..*" Consulta : possui
+Medico "1" -- "0..*" Consulta : possui
+Paciente "1" -- "0..*" Prontuario : possui
+Medico "1" -- "0..*" Prontuario : possui
+Paciente "1" -- "0..*" Notificacao : recebe
+Medico "1" -- "0..*" AgendaMedicaSlot : possui
+AgendaMedicaSlot "1" -- "0..1" Consulta : vincula
+Consulta "M" -- "1" Paciente : pertence
+Consulta "M" -- "1" Medico : pertence
+Consulta "1" -- "0..1" AgendaMedicaSlot : slot
+
+@enduml
